@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Discussion - Dual Qwen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0e27;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #e0e0e0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 103, 132, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 20px 20px;
+            color: #fff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.7;
+            color: #a0a0a0;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            gap: 40px;
+            padding: 20px 40px 40px;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ai-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(20, 25, 45, 0.6);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            position: relative;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .ai-label {
+            position: absolute;
+            top: 24px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .circle-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 40px 0;
+        }
+
+        .circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .ai-1 .circle {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow:
+                0 0 40px rgba(102, 126, 234, 0.4),
+                0 0 80px rgba(118, 75, 162, 0.2);
+        }
+
+        .ai-2 .circle {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow:
+                0 0 40px rgba(240, 147, 251, 0.4),
+                0 0 80px rgba(245, 87, 108, 0.2);
+        }
+
+        .ripple {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 3px solid;
+            opacity: 0;
+            z-index: 1;
+        }
+
+        .ai-1 .ripple {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .ai-2 .ripple {
+            border-color: #f5576c;
+            box-shadow: 0 0 20px rgba(245, 87, 108, 0.6);
+        }
+
+        .circle-container.active .ripple {
+            animation: ripple 1.5s ease-out infinite;
+        }
+
+        @keyframes ripple {
+            0% {
+                width: 200px;
+                height: 200px;
+                opacity: 0.6;
+            }
+
+            100% {
+                width: 300px;
+                height: 300px;
+                opacity: 0;
+            }
+        }
+
+        .text-display {
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: center;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #e0e0e0;
+            padding: 24px;
+            background: rgba(10, 14, 39, 0.5);
+            border-radius: 16px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .word-fade {
+            animation: fadeInWord 0.3s ease-out;
+            display: inline-block;
+        }
+
+        @keyframes fadeInWord {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .text-display.empty {
+            color: #555;
+            font-style: italic;
+        }
+
+        .text-display::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .text-display::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        .text-display::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .text-display::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            background: rgba(20, 25, 45, 0.8);
+            padding: 16px 24px;
+            border-radius: 50px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5);
+        }
+
+        .btn-clear {
+            background: rgba(255, 255, 255, 0.05);
+            color: #aaa;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-clear:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .status-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 39, 0.95);
+            color: white;
+            padding: 10px 16px;
+            text-align: center;
+            font-size: 13px;
+            z-index: 200;
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-bar.hidden {
+            display: none;
+        }
+
+        @media (max-width: 968px) {
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .main-container {
+                flex-direction: column;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .ai-panel {
+                padding: 30px 20px;
+            }
+
+            .circle-container {
+                width: 150px;
+                height: 150px;
+            }
+
+            .circle {
+                width: 150px;
+                height: 150px;
+                font-size: 48px;
+            }
+
+            .ripple {
+                width: 150px;
+                height: 150px;
+            }
+
+            .text-display {
+                min-height: 100px;
+                max-height: 150px;
+                font-size: 14px;
+                padding: 16px;
+            }
+
+            .controls {
+                bottom: 20px;
+                padding: 12px 16px;
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 12px;
+            }
+
+            @keyframes ripple {
+                0% {
+                    width: 150px;
+                    height: 150px;
+                    opacity: 0.6;
+                }
+
+                100% {
+                    width: 250px;
+                    height: 250px;
+                    opacity: 0;
+                }
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="status-bar" id="statusBar">Ready</div>
+
+    <div class="header">
+        <h1>AI Voice Discussion - Dual Qwen</h1>
+        <p>AI-1: Qwen API • AI-2: CSM Backend • Both can speak</p>
+    </div>
+
+    <div class="main-container">
+        <!-- AI-1: Qwen API (Left) -->
+        <div class="ai-panel ai-1">
+            <div class="ai-label">AI-1 (Qwen)</div>
+            <div class="circle-container" id="ai1Circle">
+                <div class="circle">🤖</div>
+                <div class="ripple"></div>
+                <div class="ripple" style="animation-delay: 0.5s;"></div>
+            </div>
+            <div class="text-display empty" id="ai1Response">Waiting to speak...</div>
+        </div>
+
+        <!-- AI-2: CSM Backend (Right) -->
+        <div class="ai-panel ai-2">
+            <div class="ai-label">AI-2 (CSM)</div>
+            <div class="circle-container" id="ai2Circle">
+                <div class="circle">🤖</div>
+                <div class="ripple"></div>
+                <div class="ripple" style="animation-delay: 0.5s;"></div>
+            </div>
+            <div class="text-display empty" id="ai2Response">Waiting to speak...</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="startBtn" class="btn btn-start">Start</button>
+        <button id="stopBtn" class="btn btn-stop" disabled>Stop</button>
+        <button id="clearBtn" class="btn btn-clear">Clear</button>
+    </div>
+
+    <input type="hidden" id="qwenApiUrl" value="http://localhost:11434" />
+    <input type="hidden" id="csmBackendUrl" value="http://localhost:8000" />
+
+    <script>
+        // Global state
+        let isRunning = false;
+        let synthesis = window.speechSynthesis;
+        let conversationHistory = [];
+        let isSpeaking = false;
+        const MAX_HISTORY = 20;
+        let currentSpeaker = null; // 'ai1' or 'ai2'
+        let displayedAI1Words = [];
+        let displayedAI2Words = [];
+        let selectedVoice = null;
+        let voiceRate = 1.2;
+        let voicePitch = 1.0;
+        let voiceVolume = 1.0;
+
+        // DOM elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusBar = document.getElementById('statusBar');
+        const ai1ResponseEl = document.getElementById('ai1Response');
+        const ai2ResponseEl = document.getElementById('ai2Response');
+        const ai1Circle = document.getElementById('ai1Circle');
+        const ai2Circle = document.getElementById('ai2Circle');
+        const qwenApiUrlInput = document.getElementById('qwenApiUrl');
+        const csmBackendUrlInput = document.getElementById('csmBackendUrl');
+
+        // Event listeners
+        startBtn.addEventListener('click', startConversation);
+        stopBtn.addEventListener('click', stopConversation);
+        clearBtn.addEventListener('click', clearHistory);
+
+        function updateStatus(message) {
+            statusBar.textContent = message;
+            statusBar.classList.remove('hidden');
+        }
+
+        function hideStatus() {
+            setTimeout(() => statusBar.classList.add('hidden'), 3000);
+        }
+
+        // Initialize voices
+        function initVoices() {
+            const voices = synthesis.getVoices();
+            if (voices.length > 0) {
+                selectedVoice = voices[6] || voices[0];
+                console.log('✅ Voice selected:', selectedVoice.name);
+            }
+        }
+
+        if (synthesis.onvoiceschanged !== undefined) {
+            synthesis.onvoiceschanged = initVoices;
+        }
+        setTimeout(initVoices, 100);
+
+        async function startConversation() {
+            isRunning = true;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            updateStatus('Starting conversation...');
+
+            // Initialize with a greeting from AI-1
+            const greeting = "Hello! Let's have a conversation.";
+            await speakAsAI('ai1', greeting);
+
+            // Start the conversation loop
+            conversationLoop();
+        }
+
+        async function conversationLoop() {
+            while (isRunning) {
+                try {
+                    // AI-1 (Qwen) speaks
+                    if (isRunning) {
+                        updateStatus('AI-1 thinking...');
+                        const ai1Text = await getQwenResponse();
+                        if (ai1Text && isRunning) {
+                            await speakAsAI('ai1', ai1Text);
+                            await delay(1000); // Pause between speakers
+                        }
+                    }
+
+                    // AI-2 (CSM) responds
+                    if (isRunning) {
+                        updateStatus('AI-2 thinking...');
+                        const ai2Text = await getCSMResponse();
+                        if (ai2Text && isRunning) {
+                            await speakAsAI('ai2', ai2Text);
+                            await delay(1000); // Pause between speakers
+                        }
+                    }
+                } catch (error) {
+                    console.error('Conversation error:', error);
+                    updateStatus('Error: ' + error.message);
+                    await delay(2000);
+                }
+            }
+        }
+
+        async function getQwenResponse() {
+            try {
+                const response = await fetch(`${qwenApiUrlInput.value}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'qwen3-0.6b',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: "You're a chill person chatting. Keep it real and short:\n" +
+                                    "- Simple stuff: 3-5 words\n" +
+                                    "- Normal chat: 1 sentence max\n" +
+                                    "- Deep stuff: 2 sentences max\n\n" +
+                                    "Talk like texting: yeah, nah, totally, I get it, fair enough.\n" +
+                                    "DON'T ask questions back. DON'T be philosophical. DON'T explain.\n" +
+                                    "Just react and keep it moving."
+                            },
+                            ...conversationHistory.slice(-8)
+                        ],
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Qwen API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const text = data.message?.content || '';
+
+                // Clean up response
+                const cleanText = text.replace(/[*_]/g, '').trim();
+
+                // Add to history
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: cleanText,
+                    speaker: 'ai1'
+                });
+
+                return cleanText;
+            } catch (error) {
+                console.error('Qwen API error:', error);
+                return null;
+            }
+        }
+
+        async function getCSMResponse() {
+            try {
+                // Get last AI-1 message as context
+                const lastAI1Message = conversationHistory
+                    .filter(m => m.speaker === 'ai1')
+                    .slice(-1)[0];
+
+                const contextText = lastAI1Message ? lastAI1Message.content : "Let's chat!";
+
+                const response = await fetch(`${csmBackendUrlInput.value}/api/stream_chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: contextText,
+                        history: conversationHistory.filter(m => m.speaker !== 'ai1').slice(-8)
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`CSM Backend error: ${response.status}`);
+                }
+
+                // Process streaming response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = '';
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.token) {
+                                    fullText += data.token;
+                                }
+                                if (data.done) {
+                                    fullText = data.full_text || fullText;
+                                }
+                            } catch (e) {
+                                console.warn('Parse error:', e);
+                            }
+                        }
+                    }
+                }
+
+                // Add to history
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: fullText,
+                    speaker: 'ai2'
+                });
+
+                return fullText;
+            } catch (error) {
+                console.error('CSM Backend error:', error);
+                return null;
+            }
+        }
+
+        async function speakAsAI(aiId, text) {
+            if (!text || text.trim().length === 0) return;
+
+            currentSpeaker = aiId;
+            isSpeaking = true;
+
+            const circleEl = aiId === 'ai1' ? ai1Circle : ai2Circle;
+            const responseEl = aiId === 'ai1' ? ai1ResponseEl : ai2ResponseEl;
+            const displayedWords = aiId === 'ai1' ? displayedAI1Words : displayedAI2Words;
+
+            circleEl.classList.add('active');
+            responseEl.classList.remove('empty');
+
+            // Clean text
+            const cleanText = removeEmojis(text);
+            if (!cleanText || cleanText.trim().length === 0) {
+                isSpeaking = false;
+                currentSpeaker = null;
+                circleEl.classList.remove('active');
+                return;
+            }
+
+            // Split into chunks for natural speech
+            const chunks = splitIntoChunks(cleanText);
+
+            for (const chunk of chunks) {
+                if (!isRunning) break;
+
+                await new Promise((resolve) => {
+                    const utterance = new SpeechSynthesisUtterance(chunk);
+                    utterance.rate = voiceRate;
+                    utterance.pitch = voicePitch;
+                    utterance.volume = voiceVolume;
+                    if (selectedVoice) utterance.voice = selectedVoice;
+
+                    const words = chunk.split(' ');
+
+                    utterance.onstart = () => {
+                        console.log(`🔊 ${aiId.toUpperCase()} speaking:`, chunk);
+                        displayWordsWithTiming(aiId, words, responseEl);
+                    };
+
+                    utterance.onend = () => {
+                        resolve();
+                    };
+
+                    utterance.onerror = (event) => {
+                        console.error('Speech error:', event);
+                        resolve();
+                    };
+
+                    synthesis.speak(utterance);
+                });
+            }
+
+            isSpeaking = false;
+            currentSpeaker = null;
+            circleEl.classList.remove('active');
+        }
+
+        function splitIntoChunks(text) {
+            // Split by sentence boundaries
+            const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+            return sentences.map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        function displayWordsWithTiming(aiId, words, responseEl) {
+            const displayedWords = aiId === 'ai1' ? displayedAI1Words : displayedAI2Words;
+            const startIndex = displayedWords.length;
+
+            // Add new words
+            if (aiId === 'ai1') {
+                displayedAI1Words.push(...words);
+            } else {
+                displayedAI2Words.push(...words);
+            }
+
+            let wordIndex = startIndex;
+
+            function showNextWord() {
+                const currentWords = aiId === 'ai1' ? displayedAI1Words : displayedAI2Words;
+                if (wordIndex >= currentWords.length) return;
+                if (!isRunning) return;
+
+                const word = currentWords[wordIndex];
+
+                // Build HTML
+                let html = '';
+                for (let i = 0; i < currentWords.length; i++) {
+                    if (i === wordIndex) {
+                        html += `<span class="word-fade">${currentWords[i]}</span>`;
+                    } else if (i < wordIndex) {
+                        html += currentWords[i];
+                    }
+                    if (i < wordIndex) html += ' ';
+                }
+
+                responseEl.innerHTML = html;
+                responseEl.scrollTop = responseEl.scrollHeight;
+
+                let delay = estimateWordDuration(word);
+                const lastChar = word.slice(-1);
+                const punctuationDelays = {
+                    '.': 400, '!': 400, '?': 400,
+                    ',': 250, ';': 300, ':': 300
+                };
+                if (punctuationDelays[lastChar]) {
+                    delay += punctuationDelays[lastChar];
+                }
+
+                wordIndex++;
+                setTimeout(showNextWord, delay);
+            }
+
+            showNextWord();
+        }
+
+        function estimateWordDuration(word) {
+            const cleanWord = word.toLowerCase().replace(/[^a-z]/g, '');
+            const quickWords = ['a', 'an', 'the', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
+                'am', 'is', 'are', 'was', 'were', 'be', 'been',
+                'to', 'of', 'in', 'on', 'at', 'by', 'for', 'with'];
+
+            if (quickWords.includes(cleanWord)) return 120;
+
+            const connectors = ['and', 'but', 'or', 'so', 'if', 'as', 'than', 'that', 'this'];
+            if (connectors.includes(cleanWord)) return 140;
+
+            if (cleanWord.length <= 3) return 160;
+
+            const syllables = countSyllables(cleanWord);
+            const syllablesPerSecond = 4.5;
+            let duration = (syllables / syllablesPerSecond) * 1000;
+
+            if (cleanWord.length >= 7) duration *= 1.1;
+            if (cleanWord.length >= 10) duration *= 1.15;
+
+            return Math.max(150, Math.min(duration, 600));
+        }
+
+        function countSyllables(word) {
+            word = word.toLowerCase().replace(/[^a-z]/g, '');
+            if (word.length <= 3) return 1;
+
+            const vowels = word.match(/[aeiouy]+/g);
+            let count = vowels ? vowels.length : 1;
+
+            if (word.endsWith('e')) count--;
+
+            return Math.max(1, count);
+        }
+
+        function removeEmojis(text) {
+            text = text.replace(/[\u{1F600}-\u{1F64F}]/gu, '');
+            text = text.replace(/[\u{1F300}-\u{1F5FF}]/gu, '');
+            text = text.replace(/[\u{1F680}-\u{1F6FF}]/gu, '');
+            text = text.replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '');
+            text = text.replace(/[\u{2600}-\u{26FF}]/gu, '');
+            text = text.replace(/[\u{2700}-\u{27BF}]/gu, '');
+            text = text.replace(/[\u{FE00}-\u{FE0F}]/gu, '');
+            text = text.replace(/[\u{1F900}-\u{1F9FF}]/gu, '');
+            text = text.replace(/[\u{1FA70}-\u{1FAFF}]/gu, '');
+            text = text.replace(/[:;=xX][oO\-]?[D\)\]\(\[pP\/\\OpP3]/g, '');
+            text = text.replace(/[oO][_\-]?[oO]/g, '');
+            text = text.replace(/[><!][_\-]?[<>]/g, '');
+            text = text.replace(/\s+/g, ' ').trim();
+            return text;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function stopConversation() {
+            isRunning = false;
+            isSpeaking = false;
+            synthesis.cancel();
+
+            ai1Circle.classList.remove('active');
+            ai2Circle.classList.remove('active');
+
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            updateStatus('Stopped');
+            hideStatus();
+        }
+
+        async function clearHistory() {
+            conversationHistory = [];
+            displayedAI1Words = [];
+            displayedAI2Words = [];
+
+            ai1ResponseEl.textContent = 'Waiting to speak...';
+            ai1ResponseEl.classList.add('empty');
+            ai2ResponseEl.textContent = 'Waiting to speak...';
+            ai2ResponseEl.classList.add('empty');
+
+            updateStatus('History cleared');
+            hideStatus();
+        }
+
+        // Initialize
+        updateStatus('Ready');
+        hideStatus();
+    </script>
+</body>
+
+</html>

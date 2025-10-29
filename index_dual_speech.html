@@ -1,0 +1,2833 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Discussion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0e27;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #e0e0e0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 103, 132, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 20px 20px;
+            color: #fff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.7;
+            color: #a0a0a0;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            gap: 40px;
+            padding: 20px 40px 40px;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ai-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(20, 25, 45, 0.6);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            position: relative;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .ai-label {
+            position: absolute;
+            top: 24px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .circle-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 40px 0;
+        }
+
+        .circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .ai-1 .circle {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow:
+                0 0 40px rgba(102, 126, 234, 0.4),
+                0 0 80px rgba(118, 75, 162, 0.2);
+        }
+
+        .ai-2 .circle {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow:
+                0 0 40px rgba(240, 147, 251, 0.4),
+                0 0 80px rgba(245, 87, 108, 0.2);
+        }
+
+        .ripple {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 3px solid;
+            opacity: 0;
+            z-index: 1;
+        }
+
+        .ai-1 .ripple {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .ai-2 .ripple {
+            border-color: #f5576c;
+            box-shadow: 0 0 20px rgba(245, 87, 108, 0.6);
+        }
+
+        .circle-container.active .ripple {
+            animation: ripple 1.5s ease-out infinite;
+        }
+
+        @keyframes ripple {
+            0% {
+                width: 200px;
+                height: 200px;
+                opacity: 0.6;
+            }
+
+            100% {
+                width: 300px;
+                height: 300px;
+                opacity: 0;
+            }
+        }
+
+        .text-display {
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: center;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #e0e0e0;
+            padding: 24px;
+            background: rgba(10, 14, 39, 0.5);
+            border-radius: 16px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .word-fade {
+            animation: fadeInWord 0.3s ease-out;
+            display: inline-block;
+        }
+
+        @keyframes fadeInWord {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .text-display.empty {
+            color: #555;
+            font-style: italic;
+        }
+
+        .text-display::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .text-display::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        .text-display::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .text-display::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            background: rgba(20, 25, 45, 0.8);
+            padding: 16px 24px;
+            border-radius: 50px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5);
+        }
+
+        .btn-clear {
+            background: rgba(255, 255, 255, 0.05);
+            color: #aaa;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-clear:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .status-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 39, 0.95);
+            color: white;
+            padding: 10px 16px;
+            text-align: center;
+            font-size: 13px;
+            z-index: 200;
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-bar.hidden {
+            display: none;
+        }
+
+        @media (max-width: 968px) {
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .main-container {
+                flex-direction: column;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .ai-panel {
+                padding: 30px 20px;
+            }
+
+            .circle-container {
+                width: 150px;
+                height: 150px;
+            }
+
+            .circle {
+                width: 150px;
+                height: 150px;
+                font-size: 48px;
+            }
+
+            .ripple {
+                width: 150px;
+                height: 150px;
+            }
+
+            .text-display {
+                min-height: 100px;
+                max-height: 150px;
+                font-size: 14px;
+                padding: 16px;
+            }
+
+            .controls {
+                bottom: 20px;
+                padding: 12px 16px;
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 12px;
+            }
+
+            @keyframes ripple {
+                0% {
+                    width: 150px;
+                    height: 150px;
+                    opacity: 0.6;
+                }
+
+                100% {
+                    width: 250px;
+                    height: 250px;
+                    opacity: 0;
+                }
+            }
+        }
+
+        /* Configuration Panel */
+        .config-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(20, 25, 45, 0.98);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 150;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .config-header h3 {
+            color: #fff;
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .btn-close {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .btn-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .config-content {
+            padding: 20px 40px 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .config-section {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .config-section h4 {
+            color: #667eea;
+            font-size: 16px;
+            margin: 0 0 20px 0;
+        }
+
+        .config-item {
+            margin-bottom: 20px;
+        }
+
+        .config-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .config-item label {
+            display: block;
+            color: #aaa;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .config-item label span {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .config-select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .config-select option {
+            background: #1a1f3a;
+            color: #fff;
+        }
+
+        .config-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .config-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+        }
+
+        .config-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+        }
+
+        .config-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 968px) {
+            .config-content {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .config-header {
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="status-bar" id="statusBar">Ready</div>
+
+    <div class="header">
+        <h1>AI Dual Voice Discussion</h1>
+        <p>Browser Speech Recognition • Both AI Can Speak • LM Studio Backend</p>
+    </div>
+
+    <div class="main-container">
+        <!-- AI-1: Qwen LM Studio (Left) -->
+        <div class="ai-panel ai-1">
+            <div class="ai-label">AI-1 (Qwen)</div>
+            <div class="circle-container" id="ai1Circle">
+                <div class="circle">🤖</div>
+                <div class="ripple"></div>
+                <div class="ripple" style="animation-delay: 0.5s;"></div>
+            </div>
+            <div class="text-display empty" id="ai1Response">Listening & Speaking...</div>
+        </div>
+
+        <!-- AI-2: CSM LM Studio (Right) -->
+        <div class="ai-panel ai-2">
+            <div class="ai-label">AI-2 (CSM)</div>
+            <div class="circle-container" id="ai2Circle">
+                <div class="circle">🤖</div>
+                <div class="ripple"></div>
+                <div class="ripple" style="animation-delay: 0.5s;"></div>
+            </div>
+            <div class="text-display empty" id="ai2Response">Listening & Speaking...</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="startBtn" class="btn btn-start">Start</button>
+        <button id="stopBtn" class="btn btn-stop" disabled>Stop</button>
+        <button id="clearBtn" class="btn btn-clear">Clear</button>
+        <button id="configBtn" class="btn btn-clear">⚙️ Config</button>
+    </div>
+
+    <!-- Configuration Panel -->
+    <div class="config-panel" id="configPanel" style="display: none;">
+        <div class="config-header">
+            <h3>⚙️ Configuration</h3>
+            <button id="closeConfigBtn" class="btn-close">✕</button>
+        </div>
+
+        <div class="config-content">
+            <!-- Voice Settings -->
+            <div class="config-section">
+                <h4>🎤 Voice Settings</h4>
+                <div class="config-item">
+                    <label for="voiceSelect">Voice:</label>
+                    <select id="voiceSelect" class="config-select"></select>
+                </div>
+                <div class="config-item">
+                    <label for="rateSlider">Speed: <span id="rateValue">1.2</span>x</label>
+                    <input type="range" id="rateSlider" min="0.5" max="2.0" step="0.1" value="1.2"
+                        class="config-slider">
+                </div>
+                <div class="config-item">
+                    <label for="pitchSlider">Pitch: <span id="pitchValue">1.0</span></label>
+                    <input type="range" id="pitchSlider" min="0.0" max="2.0" step="0.1" value="1.0"
+                        class="config-slider">
+                </div>
+                <div class="config-item">
+                    <label for="volumeSlider">Volume: <span id="volumeValue">1.0</span></label>
+                    <input type="range" id="volumeSlider" min="0.0" max="1.0" step="0.1" value="1.0"
+                        class="config-slider">
+                </div>
+            </div>
+
+            <!-- Recognition Settings -->
+            <div class="config-section">
+                <h4>🎙️ Recognition Settings</h4>
+                <div class="config-item">
+                    <label for="recognitionConfidenceInput">Recognition Confidence: <span
+                            id="recognitionConfidenceValue">0.5</span></label>
+                    <input type="range" id="recognitionConfidenceInput" min="0.0" max="1.0" step="0.05" value="0.5"
+                        class="config-slider">
+                    <small style="color: #888; font-size: 11px;">Lower = more sensitive (may capture noise)</small>
+                </div>
+                <div class="config-item">
+                    <label for="interruptConfidenceInput">Interrupt Confidence: <span
+                            id="interruptConfidenceValue">0.7</span></label>
+                    <input type="range" id="interruptConfidenceInput" min="0.0" max="1.0" step="0.05" value="0.7"
+                        class="config-slider">
+                    <small style="color: #888; font-size: 11px;">Higher = less false interrupts</small>
+                </div>
+                <div class="config-item">
+                    <label for="sendDelayInput">Send Delay (ms): <span id="sendDelayValue">600</span></label>
+                    <input type="range" id="sendDelayInput" min="100" max="2000" step="100" value="600"
+                        class="config-slider">
+                </div>
+                <div class="config-item">
+                    <label for="maxWaitInput">Max Wait Time (ms): <span id="maxWaitValue">2000</span></label>
+                    <input type="range" id="maxWaitInput" min="1000" max="10000" step="1000" value="2000"
+                        class="config-slider">
+                </div>
+                <div class="config-item">
+                    <label for="minWordsInput">Min Words to Send: <span id="minWordsValue">2</span></label>
+                    <input type="range" id="minWordsInput" min="1" max="5" step="1" value="2" class="config-slider">
+                </div>
+            </div>
+
+            <!-- Echo Filter Settings -->
+            <div class="config-section">
+                <h4>🔇 Echo Filter Settings</h4>
+                <div class="config-item">
+                    <label for="echoThresholdInput">Echo Threshold (%): <span id="echoThresholdValue">20</span></label>
+                    <input type="range" id="echoThresholdInput" min="10" max="50" step="5" value="20"
+                        class="config-slider">
+                </div>
+                <div class="config-item">
+                    <label for="maxTokensInput">Max Tokens: <span id="maxTokensValue">50</span></label>
+                    <input type="range" id="maxTokensInput" min="50" max="200" step="10" value="50"
+                        class="config-slider">
+                </div>
+            </div>
+
+            <div class="config-actions">
+                <button id="testVoiceBtn" class="btn btn-start">🔊 Test Voice</button>
+                <button id="resetConfigBtn" class="btn btn-clear">↺ Reset to Default</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" id="backendUrl" value="http://localhost:8000" />
+
+    <script>
+        // Global state
+        let isListening = false;
+        let recognition = null;
+        let recognitionAI2 = null; // Recognition khusus untuk AI-2
+        let synthesis = window.speechSynthesis;
+        let conversationHistory = [];
+        let isSpeaking = false;
+        const MAX_HISTORY = 20;
+        let accumulatedTranscript = '';
+        let lastSendTime = 0;
+        // NOTE: These constants are now controlled by config UI
+        // Use SEND_DELAY_CONFIG, MAX_WAIT_TIME_CONFIG, etc. instead
+        const MIN_WORDS_TO_SPEAK = 3; // Minimum words before AI speaks (prevent noise response)
+        let firstSpeechTime = 0; // Track when user started speaking
+        let originalAIText = ''; // Teks asli dari AI untuk validasi
+        let sendTimeoutId = null; // Track timeout for cancellation
+        let isProcessing = false; // Prevent multiple simultaneous sends
+        let restartTimeoutId = null; // Track restart timeout
+        let sendQueue = []; // Queue for pending sends
+        let isSending = false; // Track if currently sending
+        let ai1CurrentText = ''; // Track AI-1 output for echo detection
+        let ai2CurrentText = ''; // Track AI-2 output for echo detection
+        let ai1ResponseHistory = []; // Track last 3 AI-1 responses for extended echo filtering
+        let ai2ResponseHistory = []; // Track last 3 AI-2 responses for extended echo filtering
+        const MAX_AI_HISTORY = 3; // Keep last 3 responses
+        let currentSpeaker = null; // Track who is currently speaking: 'ai1' or 'ai2'
+        let nextAI = 'ai1'; // Toggle between AI-1 and AI-2 for responses
+        let autoResponseCount = 0; // Track consecutive auto-responses
+        const MAX_AUTO_RESPONSES = 999999; // Unlimited - never stop conversation
+        let silenceTimer = null; // Timer to detect silence and trigger new topic
+        const SILENCE_TRIGGER_DELAY = 5000; // 5 seconds of silence triggers new topic
+        let interruptCheckInterval = null; // Interval to check for AI interrupt opportunity
+        const INTERRUPT_CHECK_FREQUENCY = 5000; // Check every 5 seconds if AI should interrupt
+        const INTERRUPT_PROBABILITY = 0.15; // 15% chance to interrupt when other AI is speaking
+        let lastInterruptTime = 0; // Track last interrupt time
+        const INTERRUPT_COOLDOWN = 10000; // Min 10 seconds between interrupts
+        let interruptCooldown = 500; // Min 500ms between interrupts (for speech recognition interrupt)
+        let isRestarting = false; // Prevent restart loop
+        let restartingSafetyTimeout = null; // Safety timeout to force reset isRestarting
+        let displayedAI1Words = []; // Track all displayed AI-1 words for animation accumulation
+        let displayedAI2Words = []; // Track all displayed AI-2 words for animation accumulation
+        let shouldStopAfterSentence = false; // Flag for graceful interrupt at sentence boundary
+        let currentUtterance = null; // Track current speaking utterance
+        let recognitionHeartbeat = null; // Heartbeat to check if recognition is alive
+        let lastUserInputTime = Date.now(); // Track last user input
+        let silenceNudgeTimer = null; // Timer for sending nudge after silence
+        const SILENCE_NUDGE_DELAY = 10000; // 10 seconds of silence before nudge
+
+        // DOM elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusBar = document.getElementById('statusBar');
+        const ai1ResponseEl = document.getElementById('ai1Response');
+        const ai2ResponseEl = document.getElementById('ai2Response');
+        const ai1Circle = document.getElementById('ai1Circle');
+        const ai2Circle = document.getElementById('ai2Circle');
+        const backendUrlInput = document.getElementById('backendUrl');
+
+        // Config elements
+        const configBtn = document.getElementById('configBtn');
+        const configPanel = document.getElementById('configPanel');
+        const closeConfigBtn = document.getElementById('closeConfigBtn');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const rateSlider = document.getElementById('rateSlider');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const sendDelayInput = document.getElementById('sendDelayInput');
+        const maxWaitInput = document.getElementById('maxWaitInput');
+        const minWordsInput = document.getElementById('minWordsInput');
+        const echoThresholdInput = document.getElementById('echoThresholdInput');
+        const maxTokensInput = document.getElementById('maxTokensInput');
+        const recognitionConfidenceInput = document.getElementById('recognitionConfidenceInput');
+        const interruptConfidenceInput = document.getElementById('interruptConfidenceInput');
+        const testVoiceBtn = document.getElementById('testVoiceBtn');
+        const resetConfigBtn = document.getElementById('resetConfigBtn');
+
+        // Config variables (will be updated from sliders)
+        let selectedVoice = null;
+        let voiceRate = 1.2;
+        let voicePitch = 1.0;
+        let voiceVolume = 1.0;
+        let SEND_DELAY_CONFIG = 600;
+        let MAX_WAIT_TIME_CONFIG = 2000;
+        let MIN_WORDS_TO_SEND_CONFIG = 2;
+        let ECHO_THRESHOLD_CONFIG = 20;
+        let MAX_TOKENS_CONFIG = 50;
+        let RECOGNITION_CONFIDENCE_CONFIG = 0.5; // Minimum confidence to accept transcript
+        let INTERRUPT_CONFIDENCE_CONFIG = 0.7;   // Minimum confidence to trigger interrupt
+
+        // Event listeners
+        startBtn.addEventListener('click', startListening);
+        stopBtn.addEventListener('click', stopListening);
+        clearBtn.addEventListener('click', clearHistory);
+
+        // Config panel listeners
+        configBtn.addEventListener('click', () => {
+            configPanel.style.display = configPanel.style.display === 'none' ? 'block' : 'none';
+        });
+
+        closeConfigBtn.addEventListener('click', () => {
+            configPanel.style.display = 'none';
+        });
+
+        // Voice selection
+        voiceSelect.addEventListener('change', (e) => {
+            const voices = synthesis.getVoices();
+            selectedVoice = voices[e.target.selectedIndex];
+            console.log('Selected voice:', selectedVoice.name);
+        });
+
+        // Sliders
+        rateSlider.addEventListener('input', (e) => {
+            voiceRate = parseFloat(e.target.value);
+            document.getElementById('rateValue').textContent = voiceRate.toFixed(1);
+        });
+
+        pitchSlider.addEventListener('input', (e) => {
+            voicePitch = parseFloat(e.target.value);
+            document.getElementById('pitchValue').textContent = voicePitch.toFixed(1);
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            voiceVolume = parseFloat(e.target.value);
+            document.getElementById('volumeValue').textContent = voiceVolume.toFixed(1);
+        });
+
+        sendDelayInput.addEventListener('input', (e) => {
+            SEND_DELAY_CONFIG = parseInt(e.target.value);
+            document.getElementById('sendDelayValue').textContent = SEND_DELAY_CONFIG;
+        });
+
+        maxWaitInput.addEventListener('input', (e) => {
+            MAX_WAIT_TIME_CONFIG = parseInt(e.target.value);
+            document.getElementById('maxWaitValue').textContent = MAX_WAIT_TIME_CONFIG;
+        });
+
+        minWordsInput.addEventListener('input', (e) => {
+            MIN_WORDS_TO_SEND_CONFIG = parseInt(e.target.value);
+            document.getElementById('minWordsValue').textContent = MIN_WORDS_TO_SEND_CONFIG;
+        });
+
+        echoThresholdInput.addEventListener('input', (e) => {
+            ECHO_THRESHOLD_CONFIG = parseInt(e.target.value);
+            document.getElementById('echoThresholdValue').textContent = ECHO_THRESHOLD_CONFIG;
+        });
+
+        maxTokensInput.addEventListener('input', (e) => {
+            MAX_TOKENS_CONFIG = parseInt(e.target.value);
+            document.getElementById('maxTokensValue').textContent = MAX_TOKENS_CONFIG;
+        });
+
+        recognitionConfidenceInput.addEventListener('input', (e) => {
+            RECOGNITION_CONFIDENCE_CONFIG = parseFloat(e.target.value);
+            document.getElementById('recognitionConfidenceValue').textContent = RECOGNITION_CONFIDENCE_CONFIG.toFixed(2);
+        });
+
+        interruptConfidenceInput.addEventListener('input', (e) => {
+            INTERRUPT_CONFIDENCE_CONFIG = parseFloat(e.target.value);
+            document.getElementById('interruptConfidenceValue').textContent = INTERRUPT_CONFIDENCE_CONFIG.toFixed(2);
+        });
+
+        // Test voice button
+        testVoiceBtn.addEventListener('click', () => {
+            const testUtterance = new SpeechSynthesisUtterance('Hello! This is a test of the selected voice settings.');
+            testUtterance.rate = voiceRate;
+            testUtterance.pitch = voicePitch;
+            testUtterance.volume = voiceVolume;
+            if (selectedVoice) testUtterance.voice = selectedVoice;
+            synthesis.speak(testUtterance);
+        });
+
+        // Reset config button
+        resetConfigBtn.addEventListener('click', () => {
+            rateSlider.value = 1.3;
+            pitchSlider.value = 2.0;
+            volumeSlider.value = 1.0;
+            sendDelayInput.value = 600;
+            maxWaitInput.value = 2000;
+            minWordsInput.value = 2;
+            echoThresholdInput.value = 20;
+            maxTokensInput.value = 50;
+            recognitionConfidenceInput.value = 0.5;
+            interruptConfidenceInput.value = 0.7;
+
+            // Trigger input events to update values
+            rateSlider.dispatchEvent(new Event('input'));
+            pitchSlider.dispatchEvent(new Event('input'));
+            volumeSlider.dispatchEvent(new Event('input'));
+            sendDelayInput.dispatchEvent(new Event('input'));
+            maxWaitInput.dispatchEvent(new Event('input'));
+            minWordsInput.dispatchEvent(new Event('input'));
+            echoThresholdInput.dispatchEvent(new Event('input'));
+            maxTokensInput.dispatchEvent(new Event('input'));
+            recognitionConfidenceInput.dispatchEvent(new Event('input'));
+            interruptConfidenceInput.dispatchEvent(new Event('input'));
+
+            console.log('✅ Config reset to default');
+        });
+
+        // Populate voice select
+        function populateVoiceList() {
+            if (!voiceSelect) {
+                console.warn('Voice select element not found yet');
+                return;
+            }
+
+            const voices = synthesis.getVoices();
+            console.log(`📢 Populating voice list: ${voices.length} voices found`);
+
+            voiceSelect.innerHTML = '';
+
+            if (voices.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = 'Loading voices...';
+                voiceSelect.appendChild(option);
+                return;
+            }
+
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                voiceSelect.appendChild(option);
+            });
+
+            if (voices.length > 0) {
+                selectedVoice = voices[6];
+                console.log(`✅ Default voice selected: ${selectedVoice.name}`);
+            }
+        }
+
+        // Load voices when ready
+        if (synthesis.onvoiceschanged !== undefined) {
+            synthesis.onvoiceschanged = () => {
+                console.log('🔄 Voices changed event triggered');
+                populateVoiceList();
+                listAvailableVoices();
+            };
+        }
+
+        // Try to populate immediately
+        setTimeout(() => {
+            populateVoiceList();
+            // If still no voices, try again after delay
+            if (synthesis.getVoices().length === 0) {
+                console.log('⏳ No voices yet, waiting for onvoiceschanged event...');
+            }
+        }, 100);
+
+        // Voice interrupt only - no keyboard needed for natural conversation
+
+        // Helper functions
+        function safeStartRecognition(source = 'unknown') {
+            // Check conditions BEFORE setting flag
+            if (!recognition || !isListening) {
+                console.log(`⏸️ Cannot start (recognition: ${!!recognition}, listening: ${isListening})`);
+                return false;
+            }
+
+            if (isSpeaking || isProcessing) {
+                console.log(`⏸️ AI-2 busy, skipping start from ${source}`);
+                return false;
+            }
+
+            // Prevent multiple simultaneous starts
+            if (isRestarting) {
+                console.log(`⏸️ Already restarting, skipping start from ${source}`);
+                return false;
+            }
+
+            try {
+                isRestarting = true;
+
+                // Clear any existing safety timeout
+                if (restartingSafetyTimeout) {
+                    clearTimeout(restartingSafetyTimeout);
+                }
+
+                // Safety timeout: Force reset flag after 2 seconds if still stuck
+                restartingSafetyTimeout = setTimeout(() => {
+                    if (isRestarting) {
+                        console.warn('⚠️ SAFETY: Force resetting isRestarting flag (was stuck)');
+                        isRestarting = false;
+                    }
+                }, 100);
+
+                recognition.start();
+                console.log(`✅ Recognition started from ${source}`);
+
+                // Reset flag after 500ms (recognition should have started by then)
+                setTimeout(() => {
+                    isRestarting = false;
+                    console.log(`🔓 isRestarting flag reset after ${source} start`);
+                }, 500);
+
+                return true;
+            } catch (e) {
+                console.warn(`❌ Start failed from ${source}:`, e.message);
+                isRestarting = false;
+
+                // Clear safety timeout on error
+                if (restartingSafetyTimeout) {
+                    clearTimeout(restartingSafetyTimeout);
+                    restartingSafetyTimeout = null;
+                }
+
+                return false;
+            }
+        }
+
+        function estimateTokenCount(text) {
+            const words = text.trim().split(/\s+/).length;
+            return Math.ceil(words / 0.75);
+        }
+
+        function updateStatus(message) {
+            statusBar.textContent = message;
+            statusBar.classList.remove('hidden');
+        }
+
+        function hideStatus() {
+            setTimeout(() => statusBar.classList.add('hidden'), 3000);
+        }
+
+        // Check browser support
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert('Speech recognition not supported. Please use Chrome or Edge.');
+            startBtn.disabled = true;
+        }
+
+        async function startListening() {
+            console.log('🎭 Starting AI-to-AI conversation mode...');
+
+            // Set listening flag
+            isListening = true;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+
+            updateStatus('AI Conversation Mode - AIs talking to each other...');
+
+            // Setup speech recognition ONLY for interrupt detection
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+
+            recognition.continuous = true;
+            recognition.interimResults = false; // Only final results for interrupt
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                console.log('🎤 Recognition active for interrupt detection only');
+            };
+
+            recognition.onresult = (event) => {
+                // ANY speech detected = interrupt signal
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        const transcript = event.results[i][0].transcript;
+                        const confidence = event.results[i][0].confidence;
+
+                        console.log(`🎤 Speech detected (interrupt signal): "${transcript}" (conf: ${confidence.toFixed(2)})`);
+
+                        // If AI is speaking, trigger interrupt
+                        if (isSpeaking && confidence >= 0.5) {
+                            console.log('🛑 Interrupt triggered by speech detection!');
+                            shouldStopAfterSentence = true;
+                        }
+                    }
+                }
+            };
+
+            recognition.onerror = (event) => {
+                if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                    console.warn('Recognition error:', event.error);
+                }
+            };
+
+            recognition.onend = () => {
+                // Auto-restart for continuous interrupt detection
+                if (isListening) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        if (!e.message.includes('already started')) {
+                            console.warn('Recognition restart failed:', e.message);
+                        }
+                    }
+                }
+            };
+
+            // Start recognition for interrupt detection
+            try {
+                recognition.start();
+                console.log('✅ Recognition started for interrupt detection');
+            } catch (e) {
+                console.error('Failed to start recognition:', e);
+            }
+
+            // Start interrupt detection for natural conversation
+            startInterruptDetection();
+            console.log('🎭 AI interrupt detection started');
+
+            // Start the conversation with a greeting from AI-1
+            console.log('🚀 Initiating conversation with AI-1...');
+            setTimeout(() => {
+                const greeting = "Hey! How's it going?";
+                console.log(`💬 AI-1 starting: "${greeting}"`);
+                queueSendToAI(greeting, false, true);
+            }, 1000);
+
+            return; // Skip old recognition code below
+
+            /* RECOGNITION CODE DISABLED FOR AI-ONLY MODE
+            // MAXIMUM sensitivity settings
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            recognition.maxAlternatives = 10;  // Maximum alternatives for highest sensitivity
+
+            recognition.onstart = () => {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                ai1Circle.classList.add('active');
+                updateStatus('Listening...');
+
+                // Clear AI-2 text when user starts speaking
+                aiResponseEl.textContent = 'Waiting for your message...';
+                aiResponseEl.classList.add('empty');
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    // Try all alternatives for maximum sensitivity
+                    let bestTranscript = '';
+                    let bestConfidence = 0;
+
+                    // Check all alternatives and pick the best one
+                    for (let j = 0; j < event.results[i].length; j++) {
+                        const alt = event.results[i][j];
+                        if (alt.confidence > bestConfidence || j === 0) {
+                            bestTranscript = alt.transcript;
+                            bestConfidence = alt.confidence;
+                        }
+                    }
+
+                    const transcript = bestTranscript;
+                    const confidence = bestConfidence;
+
+                    if (event.results[i].isFinal) {
+                        // Check confidence threshold
+                        if (confidence >= RECOGNITION_CONFIDENCE_CONFIG) {
+                            finalTranscript += transcript;
+                            console.log(`✅ Final (conf: ${confidence.toFixed(2)}):`, transcript);
+                        } else {
+                            console.log(`⚠️ Low confidence (${confidence.toFixed(2)} < ${RECOGNITION_CONFIDENCE_CONFIG}), skipping:`, transcript);
+                        }
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Show interim results
+                if (interimTranscript) {
+                    // DON'T interrupt on interim - wait for finalTranscript with proper echo detection
+                    // This prevents false interrupts on echo
+
+                    // DON'T interrupt here - let finalTranscript handle it with proper echo detection
+                    // This prevents interrupting on echo
+
+                    // Only show user input if not currently processing
+                    if (!isSpeaking && !isProcessing) {
+                        // FILTER ECHO from interim transcript before displaying
+                        let cleanedInterim = interimTranscript;
+                        
+                        // Filter against both AI-1 and AI-2 current text
+                        if (ai1CurrentText && interimTranscript) {
+                            cleanedInterim = removeEchoFromInput(cleanedInterim, ai1CurrentText);
+                        }
+                        if (ai2CurrentText && cleanedInterim) {
+                            cleanedInterim = removeEchoFromInput(cleanedInterim, ai2CurrentText);
+                        }
+
+                        // Only display if there's actual content after echo removal
+                        if (cleanedInterim && cleanedInterim.trim().length > 0) {
+                            const displayText = accumulatedTranscript + ' ' + cleanedInterim;
+                            // Show in status bar instead of AI panels
+                            updateStatus(`You: ${displayText.trim()}`);
+                        }
+                    }
+
+                    // Clear any pending send timeout while still speaking
+                    if (sendTimeoutId) {
+                        clearTimeout(sendTimeoutId);
+                        sendTimeoutId = null;
+                    }
+                }
+
+                // Accumulate final results
+                if (finalTranscript && finalTranscript.trim().length > 0) {
+                    // ADVANCED ECHO DETECTION: Use node-edge matching
+                    const transcriptLower = finalTranscript.trim().toLowerCase();
+
+                    // DEBUG: Log interrupt check conditions
+                    console.log(`🔍 Interrupt check: isSpeaking=${isSpeaking}, currentSpeaker=${currentSpeaker}`);
+
+                    if (isSpeaking && (ai1CurrentText || ai2CurrentText)) {
+                        // Test if this is echo by trying to remove it from both AI texts
+                        let cleanedText = finalTranscript.trim();
+                        
+                        if (ai1CurrentText) {
+                            cleanedText = removeEchoFromInput(cleanedText, ai1CurrentText);
+                        }
+                        if (ai2CurrentText && cleanedText) {
+                            cleanedText = removeEchoFromInput(cleanedText, ai2CurrentText);
+                        }
+
+                        // If 100% removed or very little left = ECHO
+                        const isEcho = !cleanedText || cleanedText.trim().length === 0 ||
+                            cleanedText.trim().split(/\s+/).length < 2;
+
+                        if (isEcho) {
+                            console.log(`🔇 ECHO DETECTED (node-edge match) - Ignoring: "${finalTranscript}"`);
+                            return; // Ignore this input (it's echo)
+                        }
+
+                        // Get confidence of this transcript for interrupt decision
+                        let maxConfidence = 0;
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            if (event.results[i].isFinal) {
+                                for (let j = 0; j < event.results[i].length; j++) {
+                                    if (event.results[i][j].confidence > maxConfidence) {
+                                        maxConfidence = event.results[i][j].confidence;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Check interrupt confidence threshold
+                        if (maxConfidence < INTERRUPT_CONFIDENCE_CONFIG) {
+                            console.log(`⚠️ Confidence too low for interrupt (${maxConfidence.toFixed(2)} < ${INTERRUPT_CONFIDENCE_CONFIG}), ignoring`);
+                            return; // Don't interrupt on low confidence
+                        }
+
+                        // NOT echo + high confidence = real user input = INTERRUPT!
+                        console.log(`✅ USER INTERRUPT DETECTED - Real input: "${finalTranscript}" (cleaned: "${cleanedText}")`);
+
+                        // Reset auto-response counter on user interrupt
+                        autoResponseCount = 0;
+                        console.log('🔄 Auto-response counter reset due to user interrupt');
+
+                        // GRACEFUL INTERRUPT: Stop at sentence boundary
+                        shouldStopAfterSentence = true;
+                        console.log('🛑 Graceful interrupt requested - will stop at next sentence boundary');
+
+                        // If no utterance is currently speaking, stop immediately
+                        if (!synthesis.speaking) {
+                            console.log('🛑 No active speech, stopping immediately');
+                            isSpeaking = false;
+                            isProcessing = false;
+                            isSending = false;
+                            ai2Circle.classList.remove('active');
+
+                            if (sendQueue.length > 0) {
+                                console.log(`🗑️ Clearing queue (${sendQueue.length} items) due to voice interrupt`);
+                                sendQueue = [];
+                            }
+
+                            ai1ResponseEl.textContent = 'Interrupted by voice...';
+                            ai1ResponseEl.classList.add('empty');
+                            ai2ResponseEl.textContent = 'Interrupted by voice...';
+                            ai2ResponseEl.classList.add('empty');
+                            ai1CurrentText = '';
+                            ai2CurrentText = '';
+
+                            // Reset for new input
+                            accumulatedTranscript = '';
+                            firstSpeechTime = 0;
+                        }
+                        // Otherwise, let current sentence finish (handled in speakChunk)
+                    }
+
+                    // Track first speech time
+                    if (!firstSpeechTime) {
+                        firstSpeechTime = Date.now();
+                        console.log('⏱️ Started tracking speech time');
+                    }
+
+                    // Clear both AI displays when user speaks
+                    if (!ai1ResponseEl.classList.contains('empty')) {
+                        ai1ResponseEl.textContent = 'Listening...';
+                        ai1ResponseEl.classList.add('empty');
+                    }
+                    if (!ai2ResponseEl.classList.contains('empty')) {
+                        ai2ResponseEl.textContent = 'Listening...';
+                        ai2ResponseEl.classList.add('empty');
+                    }
+
+                    // FILTER ECHO BEFORE DISPLAYING: Remove AI-2 echo using node-edge matching
+                    const originalTranscript = finalTranscript.trim();
+                    let cleanedTranscript = originalTranscript;
+
+                    // Filter against current AI-1 text
+                    if (ai1CurrentText) {
+                        cleanedTranscript = removeEchoFromInput(cleanedTranscript, ai1CurrentText);
+                    }
+                    
+                    // Filter against current AI-2 text
+                    if (ai2CurrentText && cleanedTranscript) {
+                        cleanedTranscript = removeEchoFromInput(cleanedTranscript, ai2CurrentText);
+                    }
+
+                    // Filter against recent AI-1 response history
+                    for (const pastResponse of ai1ResponseHistory) {
+                        if (cleanedTranscript && cleanedTranscript.trim().length > 0) {
+                            cleanedTranscript = removeEchoFromInput(cleanedTranscript, pastResponse);
+                        }
+                    }
+                    
+                    // Filter against recent AI-2 response history
+                    for (const pastResponse of ai2ResponseHistory) {
+                        if (cleanedTranscript && cleanedTranscript.trim().length > 0) {
+                            cleanedTranscript = removeEchoFromInput(cleanedTranscript, pastResponse);
+                        }
+                    }
+
+                    // Calculate how much was removed
+                    const originalWordCount = originalTranscript.split(/\s+/).length;
+                    const cleanedWordCount = cleanedTranscript ? cleanedTranscript.trim().split(/\s+/).filter(w => w.length > 0).length : 0;
+                    const removalPercentage = originalWordCount > 0 ? ((originalWordCount - cleanedWordCount) / originalWordCount) * 100 : 0;
+
+                    // If completely echo after all filtering, skip this transcript
+                    if (!cleanedTranscript || cleanedTranscript.trim().length === 0) {
+                        console.log(`🔇 100% echo in transcript (filtered), skipping: "${originalTranscript}"`);
+                        return; // Don't add to accumulated, don't display
+                    }
+
+                    // ADDITIONAL CHECK: Simple substring matching for variations
+                    // Check if cleaned transcript is a substring of any AI response
+                    const cleanedLower = cleanedTranscript.toLowerCase().replace(/[^\w\s]/g, '');
+                    let isSubstringOfAI = false;
+
+                    // Check against AI-1
+                    if (ai1CurrentText && ai1CurrentText.toLowerCase().replace(/[^\w\s]/g, '').includes(cleanedLower)) {
+                        isSubstringOfAI = true;
+                    }
+                    
+                    // Check against AI-2
+                    if (!isSubstringOfAI && ai2CurrentText && ai2CurrentText.toLowerCase().replace(/[^\w\s]/g, '').includes(cleanedLower)) {
+                        isSubstringOfAI = true;
+                    }
+
+                    // Check against AI-1 history
+                    if (!isSubstringOfAI) {
+                        for (const pastResponse of ai1ResponseHistory) {
+                            if (pastResponse.toLowerCase().replace(/[^\w\s]/g, '').includes(cleanedLower)) {
+                                isSubstringOfAI = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Check against AI-2 history
+                    if (!isSubstringOfAI) {
+                        for (const pastResponse of ai2ResponseHistory) {
+                            if (pastResponse.toLowerCase().replace(/[^\w\s]/g, '').includes(cleanedLower)) {
+                                isSubstringOfAI = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isSubstringOfAI) {
+                        console.log(`🔇 Substring match detected (echo variation): "${originalTranscript}" → "${cleanedTranscript}"`);
+                        return;
+                    }
+
+                    // If MORE THAN threshold was removed as echo, consider it ALL echo (likely just noise/partial echo)
+                    if (removalPercentage > ECHO_THRESHOLD_CONFIG) {
+                        console.log(`🔇 ${removalPercentage.toFixed(0)}% echo detected (> ${ECHO_THRESHOLD_CONFIG}%), treating as full echo: "${originalTranscript}" → "${cleanedTranscript}"`);
+                        return;
+                    }
+
+                    // If too short after filtering, skip
+                    if (cleanedWordCount < MIN_WORDS_TO_SEND_CONFIG) {
+                        console.log(`🔇 Too short after echo filter (${cleanedWordCount} < ${MIN_WORDS_TO_SEND_CONFIG} words), skipping: "${originalTranscript}" → "${cleanedTranscript}"`);
+                        return;
+                    }
+
+                    // Log if echo was removed
+                    if (originalTranscript !== cleanedTranscript.trim()) {
+                        console.log(`🧹 Echo filtered in transcript (${removalPercentage.toFixed(0)}% removed): "${originalTranscript}" → "${cleanedTranscript}"`);
+                    }
+
+                    // Add cleaned transcript to accumulated
+                    let newAccumulated = accumulatedTranscript + (accumulatedTranscript ? ' ' : '') + cleanedTranscript;
+
+                    // Check token limit
+                    const tokenCount = estimateTokenCount(newAccumulated);
+
+                    if (tokenCount > MAX_TOKENS_CONFIG) {
+                        console.log(`⚠️ Token limit reached: ${tokenCount}/${MAX_TOKENS_CONFIG}`);
+
+                        // Send current accumulated before adding new
+                        if (accumulatedTranscript.trim()) {
+                            // DOUBLE CHECK: Filter echo before sending
+                            let textToSend = accumulatedTranscript;
+                            if (ai1CurrentText) {
+                                textToSend = removeEchoFromInput(textToSend, ai1CurrentText);
+                            }
+                            if (ai2CurrentText && textToSend) {
+                                textToSend = removeEchoFromInput(textToSend, ai2CurrentText);
+                            }
+
+                            // Only send if not all echo
+                            if (textToSend && textToSend.trim().length > 0 && textToSend.trim().split(/\s+/).length >= 2) {
+                                accumulatedTranscript = '';
+
+                                // Update status
+                                updateStatus('Sending to AI...');
+
+                                // Cancel any ongoing speech
+                                if (isSpeaking) {
+                                    synthesis.cancel();
+                                    isSpeaking = false;
+                                }
+
+                                queueSendToAI(textToSend);
+                            } else {
+                                console.log(`🔇 Skipping token-limit send - echo detected`);
+                                accumulatedTranscript = ''; // Clear echo
+                                updateStatus('Echo detected, waiting...');
+
+                                // Recognition will auto-restart via onend (always active mode)
+                            }
+                        }
+
+                        // Start new accumulation with current cleaned transcript
+                        accumulatedTranscript = cleanedTranscript;
+                    } else {
+                        accumulatedTranscript = newAccumulated;
+                    }
+
+                    // Show user input in status bar
+                    updateStatus(`You: ${accumulatedTranscript}`);
+
+                    console.log(`📝 Accumulated (${estimateTokenCount(accumulatedTranscript)} tokens):`, accumulatedTranscript);
+
+                    // Update last speech time
+                    lastSendTime = Date.now();
+
+                    // Clear previous timeout
+                    if (sendTimeoutId) {
+                        clearTimeout(sendTimeoutId);
+                    }
+
+                    // Check if max wait time exceeded
+                    const timeSinceFirstSpeech = Date.now() - firstSpeechTime;
+                    if (timeSinceFirstSpeech >= MAX_WAIT_TIME_CONFIG && accumulatedTranscript.trim() && !isProcessing) {
+                        console.log(`⏰ MAX WAIT TIME reached (${MAX_WAIT_TIME_CONFIG}ms) - force sending:`, accumulatedTranscript);
+
+                        // DOUBLE CHECK: Filter echo one more time before sending
+                        let textToSend = accumulatedTranscript;
+                        if (ai2CurrentText) {
+                            textToSend = removeEchoFromInput(accumulatedTranscript, ai2CurrentText);
+                        }
+
+                        // Skip if all echo after filtering
+                        if (!textToSend || textToSend.trim().length === 0) {
+                            console.log(`🔇 Skipping send - 100% echo after filter`);
+                            accumulatedTranscript = '';
+                            firstSpeechTime = 0;
+                            isProcessing = false;
+
+                            // Update status
+                            updateStatus('Echo detected, waiting...');
+
+                            // Recognition will auto-restart via onend (always active mode)
+
+                            return;
+                        }
+
+                        // Skip if too short after filtering
+                        if (textToSend.trim().split(/\s+/).length < MIN_WORDS_TO_SEND_CONFIG) {
+                            console.log(`🔇 Skipping send - too short (< ${MIN_WORDS_TO_SEND_CONFIG} words): "${textToSend}"`);
+                            accumulatedTranscript = '';
+                            firstSpeechTime = 0;
+                            isProcessing = false;
+
+                            // Update status
+                            updateStatus('Input too short, waiting...');
+
+                            // Recognition will auto-restart via onend (always active mode)
+
+                            return;
+                        }
+
+                        // Force send immediately
+                        isProcessing = true;
+                        accumulatedTranscript = '';
+                        firstSpeechTime = 0;
+
+                        // Update status
+                        updateStatus('Sending to AI...');
+
+                        // Cancel any ongoing speech
+                        if (isSpeaking) {
+                            synthesis.cancel();
+                            isSpeaking = false;
+                        }
+
+                        queueSendToAI(textToSend);
+                        return; // Skip normal timeout logic
+                    }
+
+                    // Wait for pause before sending (debounce)
+                    sendTimeoutId = setTimeout(() => {
+                        const timeSinceLastSpeech = Date.now() - lastSendTime;
+
+                        // If no new speech for configured delay, send accumulated text
+                        if (timeSinceLastSpeech >= SEND_DELAY_CONFIG && accumulatedTranscript.trim() && !isProcessing) {
+                            console.log(`📤 Auto-sending after ${SEND_DELAY_CONFIG}ms pause:`, accumulatedTranscript);
+
+                            // DOUBLE CHECK: Filter echo one more time before sending
+                            let textToSend = accumulatedTranscript;
+                            if (ai2CurrentText) {
+                                textToSend = removeEchoFromInput(accumulatedTranscript, ai2CurrentText);
+                            }
+
+                            // Skip if all echo after filtering
+                            if (!textToSend || textToSend.trim().length === 0) {
+                                console.log(`🔇 Skipping auto-send - 100% echo after filter`);
+                                accumulatedTranscript = '';
+                                firstSpeechTime = 0;
+                                isProcessing = false;
+                                return;
+                            }
+
+                            // Skip if too short after filtering
+                            if (textToSend.trim().split(/\s+/).length < MIN_WORDS_TO_SEND_CONFIG) {
+                                console.log(`🔇 Skipping auto-send - too short (< ${MIN_WORDS_TO_SEND_CONFIG} words): "${textToSend}"`);
+                                accumulatedTranscript = '';
+                                firstSpeechTime = 0;
+                                isProcessing = false;
+
+                                // Update status
+                                updateStatus('Input too short, waiting...');
+
+                                // Recognition will auto-restart via onend (always active mode)
+
+                                return;
+                            }
+
+                            // Prevent multiple sends
+                            isProcessing = true;
+
+                            // Visual feedback
+                            updateStatus('Sending to AI...');
+
+                            // Cancel any ongoing speech
+                            if (isSpeaking) {
+                                synthesis.cancel();
+                                isSpeaking = false;
+                            }
+
+                            // Reset accumulator and timer
+                            accumulatedTranscript = '';
+                            firstSpeechTime = 0;
+
+                            // Update status
+                            updateStatus('Sending to AI...');
+
+                            queueSendToAI(textToSend);
+                        }
+                    }, SEND_DELAY_CONFIG);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+
+                // Ignore these errors and keep listening
+                if (event.error === 'no-speech' ||
+                    event.error === 'audio-capture' ||
+                    event.error === 'aborted') {
+                    console.log('⚠️ Recoverable error, will restart...');
+
+                    // Don't restart immediately - let onend handle it
+                    return;
+                }
+
+                updateStatus('Error: ' + event.error);
+                hideStatus();
+            };
+
+            recognition.onend = () => {
+                // ALWAYS ACTIVE: Auto-restart immediately if still listening
+                if (isListening) {
+                    console.log('🔄 Recognition ended, auto-restarting (always active mode)...');
+
+                    // Restart IMMEDIATELY without delay
+                    if (isListening) {
+                        try {
+                            recognition.start();
+                            console.log('✅ Recognition restarted immediately');
+                        } catch (e) {
+                            // If already started, that's fine - ignore error
+                            if (e.message.includes('already started')) {
+                                console.log('✅ Recognition already active');
+                            } else {
+                                console.warn('⚠️ Restart error:', e.message);
+                                // Try again after minimal delay
+                                setTimeout(() => {
+                                    if (isListening) {
+                                        try {
+                                            recognition.start();
+                                            console.log('✅ Recognition restarted (retry)');
+                                        } catch (err) {
+                                            console.error('❌ Retry failed:', err.message);
+                                        }
+                                    }
+                                }, 50); // Minimal 50ms delay for retry
+                            }
+                        }
+                    }
+                } else {
+                    console.log('⏹️ Recognition ended, not restarting (listening stopped)');
+                }
+            };
+
+            // Set isListening BEFORE starting recognition
+            isListening = true;
+            lastUserInputTime = Date.now(); // Reset timer
+            safeStartRecognition('initial');
+
+            // Start heartbeat to ensure recognition stays alive
+            recognitionHeartbeat = setInterval(() => {
+                if (isListening && !isSpeaking && !isProcessing) {
+                    // Check if recognition is actually running
+                    // If onend hasn't been called for a while, it might be stuck
+                    console.log('💓 Recognition heartbeat check');
+                }
+            }, 5000); // Check every 5 seconds
+
+            // Silence nudge disabled - caused issues
+            // startSilenceNudgeTimer();
+            // END OF RECOGNITION CODE BLOCK */
+        }
+
+        function stopListening() {
+            isListening = false;
+            isProcessing = false; // Reset processing flag
+
+            // Stop silence detection
+            stopSilenceDetection();
+
+            // Stop interrupt detection
+            stopInterruptDetection();
+
+            // Stop heartbeat
+            if (recognitionHeartbeat) {
+                clearInterval(recognitionHeartbeat);
+                recognitionHeartbeat = null;
+            }
+
+            // Stop silence nudge timer
+            stopSilenceNudgeTimer();
+
+            // Stop recognition (used for interrupt detection)
+            if (recognition) {
+                recognition.stop();
+            }
+
+            synthesis.cancel();
+
+            // Clear ALL pending timeouts
+            if (sendTimeoutId) {
+                clearTimeout(sendTimeoutId);
+                sendTimeoutId = null;
+            }
+            if (restartTimeoutId) {
+                clearTimeout(restartTimeoutId);
+                restartTimeoutId = null;
+            }
+
+            // Cleanup audio resources
+            if (window.audioContext) {
+                window.audioContext.close();
+                window.audioContext = null;
+            }
+            if (window.audioStream) {
+                window.audioStream.getTracks().forEach(track => track.stop());
+                window.audioStream = null;
+            }
+
+            accumulatedTranscript = '';
+            ai1Circle.classList.remove('active');
+            ai2Circle.classList.remove('active');
+
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            updateStatus('Stopped');
+            hideStatus();
+        }
+
+        // Calculate text similarity (for echo detection)
+        function calculateSimilarity(text1, text2) {
+            if (!text1 || !text2) return 0;
+
+            // Simple word-based similarity
+            const words1 = text1.split(/\s+/);
+            const words2 = text2.split(/\s+/);
+
+            // Check how many words from text1 appear in text2
+            let matchCount = 0;
+            for (const word of words1) {
+                if (word.length > 2 && text2.includes(word)) {
+                    matchCount++;
+                }
+            }
+
+            return words1.length > 0 ? matchCount / words1.length : 0;
+        }
+
+        // Advanced echo removal using node-edge graph matching
+        // Removes subsequences that match AI-2's response path
+        function removeEchoFromInput(userInput, ai2Response) {
+            if (!userInput || !ai2Response) return userInput;
+
+            // Normalize: lowercase and split into words (nodes)
+            const userWords = userInput.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+            const ai2Words = ai2Response.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+
+            if (userWords.length === 0) return userInput;
+            if (ai2Words.length === 0) return userInput;
+
+            // Track matched paths with their lengths
+            const matchedPaths = [];
+
+            // Sliding window to find matching paths (edges)
+            for (let ai2Start = 0; ai2Start < ai2Words.length; ai2Start++) {
+                for (let userStart = 0; userStart < userWords.length; userStart++) {
+                    let matchLength = 0;
+                    let ai2Idx = ai2Start;
+                    let userIdx = userStart;
+                    const pathIndices = [];
+
+                    // Try to match consecutive words (edge path)
+                    while (ai2Idx < ai2Words.length && userIdx < userWords.length) {
+                        if (ai2Words[ai2Idx] === userWords[userIdx]) {
+                            pathIndices.push(userIdx);
+                            matchLength++;
+                            ai2Idx++;
+                            userIdx++;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    // Only consider matches of 3+ consecutive words for strong echo detection
+                    // OR 2 consecutive words if they're longer (not common words like "I am")
+                    const isStrongMatch = matchLength >= 3 ||
+                        (matchLength === 2 && pathIndices.every(idx => userWords[idx].length > 3));
+
+                    if (isStrongMatch) {
+                        matchedPaths.push({
+                            indices: pathIndices,
+                            length: matchLength,
+                            start: userStart
+                        });
+                    }
+                }
+            }
+
+            // Sort paths by length (longest first) to prioritize removing longer echo sequences
+            matchedPaths.sort((a, b) => b.length - a.length);
+
+            // Mark indices for removal, avoiding overlaps
+            const matchedIndices = new Set();
+            for (const path of matchedPaths) {
+                // Check if this path overlaps with already marked indices
+                const hasOverlap = path.indices.some(idx => matchedIndices.has(idx));
+                if (!hasOverlap) {
+                    // Add all indices from this path
+                    path.indices.forEach(idx => matchedIndices.add(idx));
+                }
+            }
+
+            // Build cleaned input by keeping only non-matched words
+            const cleanedWords = [];
+            for (let i = 0; i < userWords.length; i++) {
+                if (!matchedIndices.has(i)) {
+                    cleanedWords.push(userWords[i]);
+                }
+            }
+
+            const cleanedText = cleanedWords.join(' ').trim();
+
+            // Log if echo was removed
+            if (matchedIndices.size > 0) {
+                console.log(`🧹 Echo removed (${matchedPaths.length} paths, ${matchedIndices.size} words):`);
+                console.log(`   Original: "${userInput}"`);
+                console.log(`   Cleaned:  "${cleanedText}"`);
+            }
+
+            return cleanedText;
+        }
+
+        // Smart detection: Should AI respond verbally or just acknowledge silently?
+        function shouldRespondVerbally(text, wordCount) {
+            const lowerText = text.toLowerCase().trim();
+
+            // Only filter: Very repetitive input (likely noise/testing)
+            const words = lowerText.split(/\s+/);
+            const uniqueWords = new Set(words);
+            if (words.length >= 3 && uniqueWords.size === 1) {
+                console.log('🔇 Repetitive noise detected - no verbal response');
+                return false;
+            }
+
+            // Everything else gets verbal response
+            // Including: "uh", "um", "hi", "okay", "cool", etc.
+            return true;
+        }
+
+        // Send nudge to keep conversation alive after silence
+        function sendSilenceNudge() {
+            if (!isListening || isSpeaking || isProcessing) {
+                return; // Don't send if not listening or busy
+            }
+
+            const timeSinceLastInput = Date.now() - lastUserInputTime;
+            if (timeSinceLastInput >= SILENCE_NUDGE_DELAY) {
+                console.log('💬 Sending silence nudge after', Math.floor(timeSinceLastInput / 1000), 'seconds of silence');
+                queueSendToAI('...', true); // Send ellipsis as nudge (bypass filters)
+            }
+        }
+
+        // Start silence nudge timer
+        function startSilenceNudgeTimer() {
+            // Clear existing timer
+            if (silenceNudgeTimer) {
+                clearTimeout(silenceNudgeTimer);
+            }
+
+            // Set new timer - ONLY ONCE
+            silenceNudgeTimer = setTimeout(() => {
+                sendSilenceNudge();
+                silenceNudgeTimer = null; // Clear after sending
+                // DON'T auto-restart - will restart when user speaks next
+            }, SILENCE_NUDGE_DELAY);
+        }
+
+        // Stop silence nudge timer
+        function stopSilenceNudgeTimer() {
+            if (silenceNudgeTimer) {
+                clearTimeout(silenceNudgeTimer);
+                silenceNudgeTimer = null;
+            }
+        }
+
+        // Start silence detection timer - triggers new topic if conversation stops
+        function startSilenceDetection() {
+            // Clear existing timer
+            if (silenceTimer) {
+                clearTimeout(silenceTimer);
+            }
+
+            silenceTimer = setTimeout(() => {
+                if (isListening && !isSpeaking && !isProcessing && sendQueue.length === 0) {
+                    console.log('🔕 Silence detected - triggering new topic...');
+
+                    // Random conversation starters
+                    const starters = [
+                        "So, what do you think about that?",
+                        "Hey, I just thought of something interesting.",
+                        "You know what's cool?",
+                        "I've been thinking...",
+                        "Random question for you.",
+                        "Oh, by the way...",
+                        "That reminds me of something.",
+                        "Here's a thought.",
+                        "Quick question.",
+                        "I wonder..."
+                    ];
+
+                    const randomStarter = starters[Math.floor(Math.random() * starters.length)];
+                    console.log(`💬 Starting new topic: "${randomStarter}"`);
+                    queueSendToAI(randomStarter, false, true);
+                }
+            }, SILENCE_TRIGGER_DELAY);
+        }
+
+        // Stop silence detection
+        function stopSilenceDetection() {
+            if (silenceTimer) {
+                clearTimeout(silenceTimer);
+                silenceTimer = null;
+            }
+        }
+
+        // Start AI interrupt detection - randomly interrupt other AI
+        function startInterruptDetection() {
+            // Clear existing interval
+            if (interruptCheckInterval) {
+                clearInterval(interruptCheckInterval);
+            }
+
+            interruptCheckInterval = setInterval(() => {
+                // Only interrupt if one AI is speaking and no queue
+                if (isSpeaking && sendQueue.length === 0) {
+                    // Check cooldown
+                    const timeSinceLastInterrupt = Date.now() - lastInterruptTime;
+                    if (timeSinceLastInterrupt < INTERRUPT_COOLDOWN) {
+                        console.log(`⏳ Interrupt cooldown active (${Math.floor((INTERRUPT_COOLDOWN - timeSinceLastInterrupt) / 1000)}s remaining)`);
+                        return;
+                    }
+
+                    const shouldInterrupt = Math.random() < INTERRUPT_PROBABILITY;
+
+                    if (shouldInterrupt) {
+                        console.log(`🎲 Random interrupt triggered! (${(INTERRUPT_PROBABILITY * 100)}% chance)`);
+                        lastInterruptTime = Date.now();
+
+                        // Interrupt phrases
+                        const interrupts = [
+                            "Wait, hold on!",
+                            "Oh! I just thought of something.",
+                            "Actually...",
+                            "Hold up, though.",
+                            "But wait!",
+                            "Oh yeah, and...",
+                            "Quick thing!",
+                            "Real quick!",
+                            "Oh! Oh!",
+                            "One sec!"
+                        ];
+
+                        const randomInterrupt = interrupts[Math.floor(Math.random() * interrupts.length)];
+
+                        // Trigger graceful interrupt
+                        shouldStopAfterSentence = true;
+                        console.log(`💬 AI interrupt: "${randomInterrupt}"`);
+
+                        // Queue the interrupt message
+                        setTimeout(() => {
+                            if (!isSpeaking) {
+                                queueSendToAI(randomInterrupt, false, true);
+                            }
+                        }, 500);
+                    }
+                }
+            }, INTERRUPT_CHECK_FREQUENCY);
+        }
+
+        // Stop interrupt detection
+        function stopInterruptDetection() {
+            if (interruptCheckInterval) {
+                clearInterval(interruptCheckInterval);
+                interruptCheckInterval = null;
+            }
+        }
+
+        // Queue system with validation and deduplication
+        function queueSendToAI(userText, isNudge = false, isAutoResponse = false) {
+            // Validate input
+            if (!userText || userText.trim().length === 0) {
+                console.log('⚠️ Empty input, skipping');
+                return;
+            }
+
+            // No user in AI-only mode - counter never resets
+            // Auto-responses continue forever
+
+            // BYPASS FILTERS for nudges (silence keepalive)
+            if (isNudge) {
+                console.log(`💬 Sending nudge (bypassing filters): "${userText}"`);
+                sendQueue.push(userText);
+                processQueue();
+                return;
+            }
+
+            // BYPASS ECHO FILTER for auto-responses (AI-to-AI text transfer)
+            if (isAutoResponse) {
+                console.log(`🤖 Auto-response (bypassing echo filter): "${userText.substring(0, 50)}..."`);
+                sendQueue.push(userText);
+                processQueue();
+                return;
+            }
+
+            // ADVANCED ECHO REMOVAL: Remove subsequences matching AI's responses
+            // (This code only runs for non-auto-responses, which shouldn't happen in AI-only mode)
+            const originalText = userText;
+
+            // Filter against current AI-1 text
+            if (ai1CurrentText) {
+                userText = removeEchoFromInput(userText, ai1CurrentText);
+            }
+
+            // Filter against current AI-2 text
+            if (ai2CurrentText && userText) {
+                userText = removeEchoFromInput(userText, ai2CurrentText);
+            }
+
+            // Filter against recent AI-1 response history
+            for (const pastResponse of ai1ResponseHistory) {
+                if (userText && userText.trim().length > 0) {
+                    userText = removeEchoFromInput(userText, pastResponse);
+                }
+            }
+
+            // Filter against recent AI-2 response history
+            for (const pastResponse of ai2ResponseHistory) {
+                if (userText && userText.trim().length > 0) {
+                    userText = removeEchoFromInput(userText, pastResponse);
+                }
+            }
+
+            // If all words were removed (100% echo), skip
+            if (!userText || userText.trim().length === 0) {
+                console.log(`🔇 100% echo detected, skipping: "${originalText}"`);
+                return;
+            }
+
+            // If input became too short after echo removal, skip
+            if (userText.trim().split(/\s+/).length < 2) {
+                console.log(`🔇 Input too short after echo removal, skipping: "${originalText}" → "${userText}"`);
+                return;
+            }
+
+            // Log if echo was removed
+            if (originalText !== userText) {
+                console.log(`🧹 Echo filtered: "${originalText}" → "${userText}"`);
+            }
+
+            // Check for duplicates in queue (prevent echo spam)
+            const isDuplicate = sendQueue.some(item => item.toLowerCase() === userText.toLowerCase());
+            if (isDuplicate) {
+                console.log(`🔇 Duplicate in queue, skipping: "${userText}"`);
+                return;
+            }
+
+            // Check if too similar to last sent (prevent rapid duplicates)
+            if (sendQueue.length > 0) {
+                const lastInQueue = sendQueue[sendQueue.length - 1];
+                const similarity = calculateSimilarity(userText.toLowerCase(), lastInQueue.toLowerCase());
+                if (similarity > 0.8) {
+                    console.log(`🔇 Too similar to last queued (${(similarity * 100).toFixed(0)}%), skipping`);
+                    return;
+                }
+            }
+
+            console.log(`📥 Queued input: "${userText}" (queue size: ${sendQueue.length + 1})`);
+            sendQueue.push(userText);
+
+            // Update last input time
+            lastUserInputTime = Date.now();
+
+            processQueue();
+        }
+
+        async function processQueue() {
+            // If already processing, wait
+            if (isSending) {
+                console.log('⏳ Already sending, queued...');
+                return;
+            }
+
+            // If AI-2 is speaking, wait
+            if (isSpeaking) {
+                console.log('⏳ AI-2 speaking, waiting...');
+                return;
+            }
+
+            // If queue empty, done
+            if (sendQueue.length === 0) {
+                return;
+            }
+
+            // Get next item
+            const userText = sendQueue.shift();
+            isSending = true;
+
+            try {
+                await sendToAI(userText);
+            } catch (error) {
+                console.error('❌ Send error:', error);
+                // CRITICAL: Reset flags on error to prevent freeze
+                isProcessing = false;
+                isSpeaking = false;
+                ai2Circle.classList.remove('active');
+                updateStatus('Error occurred, ready for input');
+            } finally {
+                isSending = false;
+                // Process next in queue after delay
+                if (sendQueue.length > 0) {
+                    setTimeout(processQueue, 500); // Longer delay for stability
+                }
+            }
+        }
+
+        async function sendToAI(userText) {
+            try {
+                // Check if input needs verbal response (smart detection)
+                const wordCount = userText.trim().split(/\s+/).length;
+                const shouldSpeak = shouldRespondVerbally(userText, wordCount);
+
+                console.log(`📊 Input: "${userText}" (${wordCount} words) - Verbal: ${shouldSpeak}`);
+
+                ai1Circle.classList.remove('active');
+
+                // Only show AI-2 active if we'll speak
+                if (shouldSpeak) {
+                    ai2Circle.classList.add('active');
+                    updateStatus('AI thinking...');
+                } else {
+                    updateStatus('Silent acknowledgment (context updated)');
+                }
+
+                conversationHistory.push({
+                    role: 'user',
+                    content: userText
+                });
+
+                if (conversationHistory.length > MAX_HISTORY * 2) {
+                    conversationHistory = conversationHistory.slice(-MAX_HISTORY * 2);
+                }
+
+                // User input shown in status bar
+
+                // DETERMINE which AI will respond - ALTERNATE between AI-1 and AI-2
+                const aiEndpoint = nextAI === 'ai1' ? '/api/stream_chat_ai1' : '/api/stream_chat';
+                const aiLabel = nextAI === 'ai1' ? 'AI-1 (Qwen)' : 'AI-2 (CSM)';
+                const aiCircle = nextAI === 'ai1' ? ai1Circle : ai2Circle;
+                const aiResponseEl = nextAI === 'ai1' ? ai1ResponseEl : ai2ResponseEl;
+
+                // If input too short, skip AI response
+                if (!shouldSpeak) {
+                    console.log('⏭️ Skipping AI response - input too short');
+                    updateStatus('Input too short, say more...');
+
+                    isProcessing = false;
+
+                    // Resume AI-1 recognition
+                    setTimeout(() => {
+                        if (isListening && recognition && !isProcessing) {
+                            try {
+                                recognition.start();
+                                ai1Circle.classList.add('active');
+                                updateStatus('Listening...');
+                            } catch (e) {
+                                console.warn('Resume failed:', e.message);
+                            }
+                        }
+                    }, 500);
+                    return;
+                }
+
+                // Prepare current AI display for streaming
+                aiResponseEl.classList.remove('empty');
+                aiResponseEl.style.opacity = '1';
+
+                console.log(`🎯 Sending to ${aiLabel}`);
+                currentSpeaker = nextAI;
+
+                // Toggle for next time
+                nextAI = nextAI === 'ai1' ? 'ai2' : 'ai1';
+
+                aiCircle.classList.add('active');
+                updateStatus(`${aiLabel} thinking...`);
+
+                const response = await fetch(`${backendUrlInput.value}${aiEndpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: userText,
+                        history: conversationHistory
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Backend error:', errorText);
+                    throw new Error(`AI request failed: ${response.status} - ${errorText}`);
+                }
+
+                console.log('✅ Response received, starting to read stream...');
+
+                // KEEP AI-1 ACTIVE for voice interrupt detection
+                // Echo will be filtered by strict similarity check
+                console.log('🎤 AI-1 stays active for voice interrupt detection');
+
+                // NO AI-2 recognition - display text directly from streaming backend
+
+                // Process streaming response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = '';
+                let buffer = '';
+                let sentenceBuffer = '';
+                isSpeaking = true;
+
+                // Reset displayed words for current AI response
+                if (currentSpeaker === 'ai1') {
+                    displayedAI1Words = [];
+                } else {
+                    displayedAI2Words = [];
+                }
+
+                // Clear both AI displays when one starts speaking
+                ai1ResponseEl.textContent = 'Listening...';
+                ai1ResponseEl.classList.add('empty');
+                ai2ResponseEl.textContent = 'Listening...';
+                ai2ResponseEl.classList.add('empty');
+
+                // Prepare current AI display for new response
+                aiResponseEl.innerHTML = '';
+                aiResponseEl.classList.remove('empty');
+
+                updateStatus(`${aiLabel} speaking...`);
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line in buffer
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                console.log('📦 Received data:', data);
+
+                                if (data.token) {
+                                    console.log('🔤 Token:', data.token);
+                                    fullText += data.token;
+                                    sentenceBuffer += data.token;
+
+                                    // DON'T display text here - let word-by-word animation handle it
+                                    // Just prepare AI-2 display area
+                                    aiResponseEl.classList.remove('empty');
+                                    aiResponseEl.style.opacity = '1';
+
+                                    // Track current AI text for echo detection
+                                    if (currentSpeaker === 'ai1') {
+                                        ai1CurrentText = fullText.trim().toLowerCase();
+                                    } else {
+                                        ai2CurrentText = fullText.trim().toLowerCase();
+                                    }
+
+                                    // Speak when we have a complete sentence or phrase
+                                    const hasEndPunctuation = /[.!?]$/.test(sentenceBuffer.trim());
+                                    const hasComma = /,$/.test(sentenceBuffer.trim());
+                                    const wordCount = sentenceBuffer.trim().split(/\s+/).length;
+
+                                    // Speak if: sentence end, or comma with 5+ words, or 10+ words
+                                    if (hasEndPunctuation || (hasComma && wordCount >= 5) || wordCount >= 10) {
+                                        const textToSpeak = sentenceBuffer.trim();
+                                        // Skip if only punctuation (no actual words)
+                                        const hasWords = /[a-zA-Z0-9]/.test(textToSpeak);
+                                        if (textToSpeak && hasWords) {
+                                            speakChunk(textToSpeak, currentSpeaker);
+                                            sentenceBuffer = '';
+                                        } else if (textToSpeak) {
+                                            console.log('⏭️ Skipping punctuation-only chunk:', textToSpeak);
+                                            sentenceBuffer = '';
+                                        }
+                                    }
+                                }
+
+                                if (data.done) {
+                                    originalAIText = data.full_text || fullText;
+
+                                    // Speak any remaining text
+                                    const remainingText = sentenceBuffer.trim();
+                                    const hasWords = /[a-zA-Z0-9]/.test(remainingText);
+                                    if (remainingText && hasWords) {
+                                        speakChunk(remainingText, currentSpeaker);
+                                    } else if (remainingText) {
+                                        console.log('⏭️ Skipping punctuation-only remaining chunk:', remainingText);
+                                    }
+
+                                    // Update conversation history
+                                    conversationHistory.push({
+                                        role: 'assistant',
+                                        content: originalAIText
+                                    });
+
+                                    // Save to current AI response history for extended echo filtering
+                                    if (currentSpeaker === 'ai1') {
+                                        ai1ResponseHistory.push(originalAIText.toLowerCase());
+                                        if (ai1ResponseHistory.length > MAX_AI_HISTORY) {
+                                            ai1ResponseHistory.shift();
+                                        }
+                                        console.log(`📚 AI-1 history size: ${ai1ResponseHistory.length}`);
+                                    } else {
+                                        ai2ResponseHistory.push(originalAIText.toLowerCase());
+                                        if (ai2ResponseHistory.length > MAX_AI_HISTORY) {
+                                            ai2ResponseHistory.shift();
+                                        }
+                                        console.log(`📚 AI-2 history size: ${ai2ResponseHistory.length}`);
+                                    }
+
+                                    console.log(`✅ ${aiLabel} streaming complete:`, originalAIText);
+                                }
+                            } catch (e) {
+                                console.warn('Parse error:', e);
+                            }
+                        }
+                    }
+                }
+
+                // Wait for all speech to finish
+                await waitForSpeechEnd();
+
+                // No AI-2 recognition to stop
+
+                const previousSpeaker = currentSpeaker; // Save who just spoke
+                isSpeaking = false;
+                isProcessing = false;
+                ai1Circle.classList.remove('active');
+                ai2Circle.classList.remove('active');
+                currentSpeaker = null;
+
+                // RESET interrupt flag for next conversation
+                shouldStopAfterSentence = false;
+                console.log('🔓 Reset shouldStopAfterSentence flag');
+
+                // DON'T clear AI current text yet - keep it for echo filtering!
+
+                // Process next in queue if any
+                if (sendQueue.length > 0) {
+                    console.log(`📋 Processing next in queue (${sendQueue.length} remaining)`);
+                    setTimeout(processQueue, 300);
+                } else {
+                    // AUTO-RESPONSE: Make the other AI respond after a short delay
+                    console.log(`🔄 ${previousSpeaker} finished. Triggering other AI response...`);
+
+                    // Clear any existing silence timer
+                    if (silenceTimer) {
+                        clearTimeout(silenceTimer);
+                        silenceTimer = null;
+                    }
+
+                    setTimeout(() => {
+                        if (isListening && !isSpeaking && !isProcessing && sendQueue.length === 0) {
+                            // Get the last AI response as context for the other AI
+                            const lastResponse = originalAIText || '';
+                            if (lastResponse && lastResponse.trim().length > 0) {
+                                console.log(`🤖 Auto-sending to other AI: "${lastResponse.substring(0, 50)}..."`);
+                                autoResponseCount++;
+                                queueSendToAI(lastResponse, false, true); // Mark as auto-response
+                            } else {
+                                // If no response, start silence detection
+                                console.log('⚠️ No response to send, starting silence detection...');
+                                startSilenceDetection();
+                            }
+                        } else {
+                            // If conditions not met, start silence detection as backup
+                            startSilenceDetection();
+                        }
+                    }, 1000); // Wait 1 second before other AI responds
+                }
+
+                // AI-1 should already be running (kept active for voice interrupt)
+                // Just ensure it's active and clear echo text after delay
+                if (isListening) {
+                    // Check if recognition is actually running by trying to access it
+                    // If it's not running, we need to restart it
+                    // Recognition is always active, just ensure UI is updated
+                    ai1Circle.classList.add('active');
+                    updateStatus('Listening...');
+                    console.log('✅ AI-1 remains active (always active mode)');
+
+                    // DON'T clear ai2CurrentText yet - AI is still speaking!
+                    // It will be cleared after all speech finishes (in waitForSpeechEnd callback)
+                    console.log('⏳ Keeping ai2CurrentText for interrupt detection while speaking');
+
+                    // Clear AI displays after short delay
+                    setTimeout(() => {
+                        if (!isSpeaking) { // Only clear if not speaking again
+                            ai1ResponseEl.textContent = 'Listening & Speaking...';
+                            ai1ResponseEl.classList.add('empty');
+                            ai2ResponseEl.textContent = 'Listening & Speaking...';
+                            ai2ResponseEl.classList.add('empty');
+                            console.log('🧹 Cleared AI displays');
+
+                            // Force check recognition status
+                            setTimeout(() => {
+                                console.log(`🔍 Checking recognition status: isListening=${isListening}, isSpeaking=${isSpeaking}, isProcessing=${isProcessing}`);
+
+                                if (isListening && !isSpeaking && !isProcessing) {
+                                    console.log('🔄 Attempting to restart recognition...');
+                                    // Try to trigger a restart if needed
+                                    try {
+                                        // This will fail if already running, which is fine
+                                        recognition.start();
+                                        console.log('✅ Recognition restarted after AI-2');
+                                    } catch (e) {
+                                        if (e.message.includes('already started')) {
+                                            console.log('✅ Recognition already running - OK');
+                                        } else {
+                                            console.error('❌ Recognition restart FAILED:', e.message);
+                                            // Force reset flags and try again
+                                            isProcessing = false;
+                                            isSpeaking = false;
+                                            setTimeout(() => {
+                                                try {
+                                                    recognition.start();
+                                                    console.log('✅ Recognition restarted (retry after flag reset)');
+                                                } catch (err) {
+                                                    console.error('❌ Retry also failed:', err.message);
+                                                }
+                                            }, 200);
+                                        }
+                                    }
+                                } else {
+                                    console.warn('⚠️ Cannot restart - conditions not met');
+                                }
+                            }, 500);
+                        }
+                    }, 10); // Wait 1 second before clearing display
+                } else {
+                    console.log('⚠️ Not listening - isListening is false');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                updateStatus('Error: ' + error.message);
+                aiResponseEl.textContent = 'Error: ' + error.message;
+                aiResponseEl.classList.remove('empty');
+
+                // Reset flags
+                isSpeaking = false;
+                isProcessing = false;
+                ai2Circle.classList.remove('active');
+
+                setTimeout(() => {
+                    if (isListening) {
+                        ai1Circle.classList.add('active');
+                        updateStatus('Listening...');
+                    }
+                }, 100);
+            }
+        }
+
+        // Get available voices (for debugging/selection)
+        function listAvailableVoices() {
+            const voices = synthesis.getVoices();
+            console.log('📢 Available voices:', voices.length);
+            voices.forEach((voice, index) => {
+                console.log(`${index}: ${voice.name} (${voice.lang}) - ${voice.localService ? 'Local' : 'Remote'}`);
+            });
+            return voices;
+        }
+
+        // Load voices when ready
+        if (synthesis.onvoiceschanged !== undefined) {
+            synthesis.onvoiceschanged = listAvailableVoices;
+        }
+
+        // Speak a chunk of text with synchronized word-by-word display
+        function speakChunk(text, speaker = 'ai2') {
+            // Check if graceful interrupt was requested
+            if (shouldStopAfterSentence) {
+                console.log('🛑 Skipping chunk due to graceful interrupt (flag is true)');
+                console.log('⚠️ This should not happen! Flag should be reset after interrupt.');
+                return;
+            }
+
+            if (!text || text.trim().length === 0) {
+                console.log('⚠️ Skipping chunk - empty text');
+                return;
+            }
+
+            // Remove emojis and emoticons before speaking
+            const cleanText = removeEmojis(text);
+
+            if (!cleanText || cleanText.trim().length === 0) return;
+
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.rate = voiceRate;     // From config slider
+            utterance.pitch = voicePitch;   // From config slider
+            utterance.volume = voiceVolume; // From config slider
+
+            // Use selected voice from config
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
+            // Track current utterance
+            currentUtterance = utterance;
+
+            // Split into words for synchronized display
+            const words = cleanText.split(' ');
+            let currentWordIndex = 0;
+            let displayedText = '';
+
+            utterance.onstart = () => {
+                console.log(`🔊 ${speaker.toUpperCase()} speaking chunk:`, cleanText);
+
+                // Start word-by-word display
+                displayWordsWithTiming(words, speaker);
+            };
+
+            utterance.onend = () => {
+                // Check if graceful interrupt was requested during this chunk
+                if (shouldStopAfterSentence) {
+                    console.log('🛑 Graceful interrupt: Stopped at sentence boundary');
+
+                    // Stop speaking and reset flags
+                    synthesis.cancel();
+                    isSpeaking = false;
+                    isProcessing = false;
+                    isSending = false;
+                    shouldStopAfterSentence = false;
+                    currentUtterance = null;
+                    ai2Circle.classList.remove('active');
+
+                    if (sendQueue.length > 0) {
+                        console.log(`🗑️ Clearing queue (${sendQueue.length} items)`);
+                        sendQueue = [];
+                    }
+
+                    ai1ResponseEl.textContent = 'Interrupted...';
+                    ai1ResponseEl.classList.add('empty');
+                    ai2ResponseEl.textContent = 'Interrupted...';
+                    ai2ResponseEl.classList.add('empty');
+                    ai1CurrentText = '';
+                    ai2CurrentText = '';
+                }
+            };
+
+            utterance.onerror = (event) => {
+                console.error('Speech error:', event);
+                currentUtterance = null;
+            };
+
+            synthesis.speak(utterance);
+        }
+
+        // Display words with timing based on speech rate and punctuation
+        function displayWordsWithTiming(words, speaker = 'ai2') {
+            // Add new words to appropriate global array
+            const displayedWords = speaker === 'ai1' ? displayedAI1Words : displayedAI2Words;
+            const responseEl = speaker === 'ai1' ? ai1ResponseEl : ai2ResponseEl;
+
+            const startIndex = displayedWords.length;
+
+            if (speaker === 'ai1') {
+                displayedAI1Words.push(...words);
+            } else {
+                displayedAI2Words.push(...words);
+            }
+
+            let wordIndex = startIndex;
+
+            function showNextWord() {
+                const currentWords = speaker === 'ai1' ? displayedAI1Words : displayedAI2Words;
+                if (wordIndex >= currentWords.length) return;
+                if (!isSpeaking) return; // Stop if interrupted
+
+                const word = currentWords[wordIndex];
+
+                // Build HTML with all words, animating only the current one
+                let html = '';
+                for (let i = 0; i < currentWords.length; i++) {
+                    if (i === wordIndex) {
+                        // Current word with fade-in animation
+                        html += `<span class="word-fade">${currentWords[i]}</span>`;
+                    } else if (i < wordIndex) {
+                        // Already displayed words (no animation)
+                        html += currentWords[i];
+                    }
+                    // Don't show words after current index yet
+
+                    if (i < wordIndex) html += ' ';
+                }
+
+                // Update display with animation
+                responseEl.innerHTML = html;
+                responseEl.scrollTop = responseEl.scrollHeight;
+
+                // Calculate delay based on word length and punctuation
+                let delay = estimateWordDuration(word);
+
+                // Check for punctuation at end of word
+                const lastChar = word.slice(-1);
+                const punctuationDelays = {
+                    '.': 400,  // Period: longer pause
+                    '!': 400,  // Exclamation
+                    '?': 400,  // Question
+                    ',': 250,  // Comma: medium pause
+                    ';': 300,  // Semicolon
+                    ':': 300   // Colon
+                };
+
+                if (punctuationDelays[lastChar]) {
+                    delay += punctuationDelays[lastChar];
+                }
+
+                wordIndex++;
+                setTimeout(showNextWord, delay);
+            }
+
+            showNextWord();
+        }
+
+        // Estimate word duration based on syllables, word type, and natural speech patterns
+        function estimateWordDuration(word) {
+            const cleanWord = word.toLowerCase().replace(/[^a-z]/g, '');
+
+            // Very short function words (articles, pronouns, etc.) - FAST
+            const quickWords = ['a', 'an', 'the', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
+                'am', 'is', 'are', 'was', 'were', 'be', 'been',
+                'to', 'of', 'in', 'on', 'at', 'by', 'for', 'with'];
+
+            if (quickWords.includes(cleanWord)) {
+                return 120; // Very fast (120ms)
+            }
+
+            // Conjunctions and short connectors - FAST
+            const connectors = ['and', 'but', 'or', 'so', 'if', 'as', 'than', 'that', 'this'];
+            if (connectors.includes(cleanWord)) {
+                return 140; // Fast (140ms)
+            }
+
+            // Common short words - MEDIUM-FAST
+            if (cleanWord.length <= 3) {
+                return 160; // Medium-fast
+            }
+
+            // Count syllables for longer words
+            const syllables = countSyllables(cleanWord);
+
+            // Base timing: At rate 1.3, approximately 4.5 syllables per second
+            const syllablesPerSecond = 4.5;
+            let duration = (syllables / syllablesPerSecond) * 1000;
+
+            // Adjust for word complexity
+            // Longer words (7+ letters) get slightly more time for clarity
+            if (cleanWord.length >= 7) {
+                duration *= 1.1; // 10% slower for complex words
+            }
+
+            // Very long words (10+ letters) even more time
+            if (cleanWord.length >= 10) {
+                duration *= 1.15; // 15% slower for very complex words
+            }
+
+            return Math.max(150, Math.min(duration, 600)); // Min 150ms, max 600ms
+        }
+
+        // Count syllables in a word
+        function countSyllables(word) {
+            word = word.toLowerCase().replace(/[^a-z]/g, '');
+            if (word.length <= 3) return 1;
+
+            // Count vowel groups
+            const vowels = word.match(/[aeiouy]+/g);
+            let count = vowels ? vowels.length : 1;
+
+            // Adjust for silent e
+            if (word.endsWith('e')) count--;
+
+            return Math.max(1, count);
+        }
+
+        // Remove emojis and emoticons from text
+        function removeEmojis(text) {
+            // Remove emoji unicode characters
+            text = text.replace(/[\u{1F600}-\u{1F64F}]/gu, ''); // Emoticons
+            text = text.replace(/[\u{1F300}-\u{1F5FF}]/gu, ''); // Symbols & Pictographs
+            text = text.replace(/[\u{1F680}-\u{1F6FF}]/gu, ''); // Transport & Map
+            text = text.replace(/[\u{1F1E0}-\u{1F1FF}]/gu, ''); // Flags
+            text = text.replace(/[\u{2600}-\u{26FF}]/gu, '');   // Misc symbols
+            text = text.replace(/[\u{2700}-\u{27BF}]/gu, '');   // Dingbats
+            text = text.replace(/[\u{FE00}-\u{FE0F}]/gu, '');   // Variation Selectors
+            text = text.replace(/[\u{1F900}-\u{1F9FF}]/gu, ''); // Supplemental Symbols
+            text = text.replace(/[\u{1FA70}-\u{1FAFF}]/gu, ''); // Symbols and Pictographs Extended-A
+
+            // Remove text emoticons
+            text = text.replace(/[:;=xX][oO\-]?[D\)\]\(\[pP\/\\OpP3]/g, '');
+            text = text.replace(/[oO][_\-]?[oO]/g, '');
+            text = text.replace(/[><!][_\-]?[<>]/g, '');
+
+            // Clean up extra spaces
+            text = text.replace(/\s+/g, ' ').trim();
+
+            return text;
+        }
+
+        // Wait for all queued speech to finish
+        function waitForSpeechEnd() {
+            return new Promise((resolve) => {
+                const checkInterval = setInterval(() => {
+                    if (!synthesis.speaking && !synthesis.pending) {
+                        clearInterval(checkInterval);
+
+                        // NOW clear both AI current text - all speech finished
+                        ai1CurrentText = '';
+                        ai2CurrentText = '';
+                        console.log('🧹 Cleared AI current text - all speech finished');
+
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        // Start speech recognition for AI-2 to capture spoken text
+        function startAI2Recognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognitionAI2 = new SpeechRecognition();
+
+            recognitionAI2.continuous = true;
+            recognitionAI2.interimResults = true;
+            recognitionAI2.lang = 'en-US';
+            recognitionAI2.maxAlternatives = 5;
+
+            let ai2CurrentSentence = ''; // Only show current sentence
+
+            recognitionAI2.onstart = () => {
+                console.log('🎤 AI-2 recognition started - capturing speech');
+            };
+
+            recognitionAI2.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Show interim results with lower opacity
+                if (interimTranscript) {
+                    const displayText = ai2CurrentSentence + ' ' + interimTranscript;
+                    aiResponseEl.textContent = displayText.trim();
+                    aiResponseEl.style.opacity = '0.7';
+                    aiResponseEl.scrollTop = aiResponseEl.scrollHeight;
+                }
+
+                // Accumulate final results
+                if (finalTranscript && finalTranscript.trim().length > 0) {
+                    ai2CurrentSentence += (ai2CurrentSentence ? ' ' : '') + finalTranscript.trim();
+
+                    // Check if sentence ended (period, exclamation, question mark)
+                    if (/[.!?]$/.test(ai2CurrentSentence.trim())) {
+                        console.log('✅ Sentence complete:', ai2CurrentSentence);
+                        // Clear for next sentence
+                        ai2CurrentSentence = '';
+                        aiResponseEl.textContent = '...'; // Show transition
+                        aiResponseEl.style.opacity = '0.5';
+                    } else {
+                        // Show current sentence
+                        aiResponseEl.textContent = ai2CurrentSentence;
+                        aiResponseEl.style.opacity = '1';
+                    }
+
+                    aiResponseEl.scrollTop = aiResponseEl.scrollHeight;
+                    console.log('📝 AI-2 captured:', finalTranscript);
+                }
+            };
+
+            recognitionAI2.onerror = (event) => {
+                console.warn('AI-2 recognition error:', event.error);
+                // Ignore recoverable errors
+                if (event.error === 'no-speech' || event.error === 'aborted') {
+                    return;
+                }
+            };
+
+            recognitionAI2.onend = () => {
+                // Auto-restart if still speaking
+                if (isSpeaking && recognitionAI2) {
+                    try {
+                        recognitionAI2.start();
+                        console.log('🔄 AI-2 recognition restarted');
+                    } catch (e) {
+                        console.warn('AI-2 restart failed:', e.message);
+                    }
+                } else {
+                    console.log('🔇 AI-2 recognition ended');
+                }
+            };
+
+            try {
+                recognitionAI2.start();
+            } catch (e) {
+                console.error('Failed to start AI-2 recognition:', e);
+            }
+        }
+
+        // Stop AI-2 recognition
+        function stopAI2Recognition() {
+            if (recognitionAI2) {
+                recognitionAI2.stop();
+                recognitionAI2 = null;
+                console.log('🛑 AI-2 recognition stopped');
+            }
+        }
+
+
+
+
+
+        async function clearHistory() {
+            try {
+                await fetch(`${backendUrlInput.value}/api/history`, {
+                    method: 'DELETE'
+                });
+
+                conversationHistory = [];
+                displayedAI1Words = [];
+                displayedAI2Words = [];
+                ai1ResponseEl.textContent = 'Listening & Speaking...';
+                ai1ResponseEl.classList.add('empty');
+                ai2ResponseEl.textContent = 'Listening & Speaking...';
+                ai2ResponseEl.classList.add('empty');
+
+                updateStatus('History cleared');
+                hideStatus();
+
+            } catch (error) {
+                console.error('Error clearing history:', error);
+            }
+        }
+
+        // Initialize
+        updateStatus('Ready');
+        hideStatus();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2 Speaker Circles - MFCC Lock</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 30px;
+        }
+
+        canvas {
+            margin-top: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>2 Speaker Realtime Circles (MFCC Lock)</h1>
+    <p>Lingkaran aktif hanya saat speaker berbicara</p>
+    <canvas id="circleCanvas" width="400" height="200"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/meyda/dist/web/meyda.min.js"></script>
+    <script>
+        const canvas = document.getElementById("circleCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const NUM_SPEAKERS = 2;
+        const MIN_RMS = 0.05;
+        const DIST_THRESHOLD = 30;
+
+        // Posisi lingkaran 2 speaker
+        const positions = [
+            { x: 100, y: 100 },
+            { x: 300, y: 100 }
+        ];
+
+        let speakers = [
+            { mfcc: null, activity: 0 },
+            { mfcc: null, activity: 0 }
+        ];
+
+        // Web Audio API
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioCtx.createMediaStreamSource(stream);
+
+            const analyzer = Meyda.createMeydaAnalyzer({
+                audioContext: audioCtx,
+                source: source,
+                bufferSize: 512,
+                featureExtractors: ['rms', 'mfcc'],
+                callback: features => {
+                    if (!features) return;
+                    const rms = features.rms;
+                    if (rms < MIN_RMS) {
+                        for (let s of speakers) s.activity *= 0.9;
+                        drawCircles();
+                        return;
+                    }
+                    const mfcc = features.mfcc;
+
+                    // assign speaker by centroid distance
+                    let bestSpeaker = null;
+                    let minDist = Infinity;
+                    speakers.forEach(s => {
+                        if (s.mfcc) {
+                            let dist = 0;
+                            for (let i = 0; i < s.mfcc.length; i++) {
+                                dist += (s.mfcc[i] - mfcc[i]) ** 2;
+                            }
+                            dist = Math.sqrt(dist);
+                            if (dist < minDist) {
+                                minDist = dist;
+                                bestSpeaker = s;
+                            }
+                        }
+                    });
+
+                    if (bestSpeaker && minDist < DIST_THRESHOLD) {
+                        bestSpeaker.activity = Math.min(1, bestSpeaker.activity + rms * 5);
+                        for (let i = 0; i < mfcc.length; i++) {
+                            bestSpeaker.mfcc[i] = (bestSpeaker.mfcc[i] * 10 + mfcc[i]) / 11;
+                        }
+                    } else {
+                        let empty = speakers.find(s => !s.mfcc);
+                        if (empty) {
+                            empty.mfcc = mfcc.slice();
+                            empty.activity = rms * 5;
+                        }
+                    }
+
+                    for (let s of speakers) s.activity *= 0.9;
+                    drawCircles();
+                }
+            });
+
+            analyzer.start();
+        });
+
+        function drawCircles() {
+            ctx.clearRect(0, 0, 400, 200);
+            const baseRadius = 50;
+            const colors = ["#3498db", "#e74c3c"];
+
+            speakers.forEach((s, i) => {
+                const scale = 1 + s.activity;
+                ctx.beginPath();
+                ctx.arc(positions[i].x, positions[i].y, baseRadius * scale, 0, Math.PI * 2);
+                ctx.fillStyle = colors[i];
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "#333";
+                ctx.stroke();
+            });
+        }
+    </script>
+</body>
+
+</html>
