@@ -8,6 +8,8 @@
 
 A real-time AI voice assistant with natural human-like conversation capabilities. Built for low latency and seamless interaction using browser-based speech recognition and local LLM inference.
 
+![Demo UI](demo.png)
+
 ## Features
 
 - **Real-time Speech Recognition** - Browser-based speech-to-text with zero latency
