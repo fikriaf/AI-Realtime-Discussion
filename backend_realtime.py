@@ -26,8 +26,8 @@ app.add_middleware(
 )
 
 # Configuration
-LM_STUDIO_URL = "http://10.42.100.159:1234/v1/chat/completions"
-LM_STUDIO_BASE = "http://10.42.100.159:1234"
+LM_STUDIO_URL = "http://10.15.24.125:1234/v1/chat/completions"
+LM_STUDIO_BASE = "http://10.15.24.125:1234"
 conversation_history = []
 MAX_HISTORY = 20
 
